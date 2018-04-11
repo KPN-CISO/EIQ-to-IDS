@@ -247,10 +247,10 @@ if __name__ == "__main__":
                         'the -v/--verbose flag for debugging purposes.')
     cli.add_option('-i', '--sid',
                    dest='sid',
-                   default=60000,
+                   default=1000000,
                    help='[optional] Specify the rule id to start counting ' +
                         'from. Particularly important when creating Snort ' +
-                        'SourceFire rulesets (default: 60000)')
+                        'SourceFire rulesets (default: 1000000)')
     cli.add_option('-n', '--name',
                    dest='name',
                    default=settings.COMMENT,

@@ -129,7 +129,8 @@ def rulegen(entities, options):
                                            options.dest + ' any ' +
                                            '(msg: "' + message + '"; ' +
                                            'hash:' + type + "; "
-                                           'protected_content:"' + value + '"; ' +
+                                           'protected_content:"' + value +
+                                           '"; ' +
                                            'sid:' + str(sid) + '; ' +
                                            'rev:1;' +
                                            ')')

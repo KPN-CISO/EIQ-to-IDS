@@ -102,8 +102,8 @@ def rulegen(entities, options):
                 message = "TLP:" + ''.join(tlp) + \
                           " | Actor: " + ''.join(actor) + \
                           " | " + ''.join(description)
-                message.replace('"', '')
-                message = unicodedata.normalize('NFKD', message)
+                message = message.replace('"', '')
+                message = unicodedata.normalize('NFC', message)
             for kind in entity[title]:
                 for value in entity[title][kind]:
                     if kind == 'ipv4':
@@ -129,30 +129,35 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'file':
+                        value = cleanup(value)
+                        value = value.replace('"', '')
+                        value = unicodedata.normalize('NFC', message)
+                        value = '|'.join("{:02x}".format(ord(c)) \
+                                for c in value)
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' any ' +
                                        '(msg:"' + message + '"; ' +
                                        'flow:to_server,established; ' +
-                                       'content:"' + value + '"; ' +
+                                       'content:|"' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:1' +
                                        ')')
                         sid += 1
-                    if 'hash-' in kind:
-                        type = kind.split('-')[1]
-                        if type == 'md5' or \
-                           type == 'sha256' or \
-                           type == 'sha512':
-                            ruleset.append('alert tcp $HOME_NET any -> ' +
-                                           options.dest + ' any ' +
-                                           '(msg:"' + message + '"; ' +
-                                           'content:"' + value +
-                                           '"; ' +
-                                           'hash:' + type + "; "
-                                           'sid:' + str(sid) + '; ' +
-                                           'rev:1' +
-                                           ')')
-                            sid += 1
+#                    if 'hash-' in kind:
+#                        type = kind.split('-')[1]
+#                        if type == 'md5' or \
+#                           type == 'sha256' or \
+#                           type == 'sha512':
+#                            ruleset.append('alert tcp $HOME_NET any -> ' +
+#                                           options.dest + ' any ' +
+#                                           '(msg:"' + message + '"; ' +
+#                                           'content:"' + value +
+#                                           '"; ' +
+#                                           'hash:' + type + "; "
+#                                           'sid:' + str(sid) + '; ' +
+#                                           'rev:1' +
+#                                           ')')
+#                            sid += 1
                     if kind == 'uri':
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' $HTTP_PORTS ' +

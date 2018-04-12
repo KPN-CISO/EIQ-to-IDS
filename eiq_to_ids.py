@@ -85,7 +85,7 @@ def cleanup(text=None):
 def rulegen(entities, options):
     ruleset = []
     if options.type == 's':
-        if options.verbose: 
+        if options.verbose:
             print("U) Building Snort/SourceFire rules ...")
         sid = int(options.sid)
         for entity in entities:
@@ -224,8 +224,8 @@ def download(feedID, options):
             content_block = response['data']['content_blocks'][0]
             content_block = content_block.replace(settings.EIQVERSION, "")
             response = eiqAPI.do_call(endpt=content_block,
-                                  headers=eiqHeaders,
-                                  method='GET')
+                                      headers=eiqHeaders,
+                                      method='GET')
             if options.verbose:
                 pprint.pprint(response)
             if 'entities' not in response:

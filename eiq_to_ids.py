@@ -98,7 +98,8 @@ def rulegen(entities, options):
                 if not actor:
                     actor = ['unknown']
                 tlp = entity[title]['tlp']
-                description = cleanup(options.name + " | " + title)
+                description = cleanup(options.name + " | " +
+                                      title + " | ") 
                 message = "TLP:" + ''.join(tlp) + \
                           " | Actor: " + ''.join(actor) + \
                           " | " + ''.join(description)
@@ -107,9 +108,10 @@ def rulegen(entities, options):
             for kind in entity[title]:
                 for value in entity[title][kind]:
                     if kind == 'ipv4':
+                        msg = kind.upper() + " detected | " + message
                         ruleset.append('alert ip $HOME_NET any -> ' +
                                        value + ' any ' +
-                                       '(msg:"' + message + '"; ' +
+                                       '(msg:"' + msg + '"; ' +
                                        'flow:to_server,established; ' +
                                        'gid:1; ' +
                                        'priority:1; ' +
@@ -118,9 +120,10 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'ipv6':
+                        msg = kind.upper() + " detected | " + message
                         ruleset.append('alert ip $HOME_NET any -> ' +
                                        value + ' any ' +
-                                       '(msg:"' + message + '"; ' +
+                                       '(msg:"' + msg + '"; ' +
                                        'flow:to_server,established; ' +
                                        'gid:1; ' +
                                        'priority:1; ' +
@@ -129,6 +132,7 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'file':
+                        msg = kind.upper() + " detected | " + message
                         value = cleanup(value)
                         value = value.replace('"', '')
                         value = unicodedata.normalize('NFC', message)
@@ -136,7 +140,7 @@ def rulegen(entities, options):
                                 for c in value)
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' any ' +
-                                       '(msg:"' + message + '"; ' +
+                                       '(msg:"' + msg + '"; ' +
                                        'flow:to_server,established; ' +
                                        'content:|"' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
@@ -159,9 +163,10 @@ def rulegen(entities, options):
 #                                           ')')
 #                            sid += 1
                     if kind == 'uri':
+                        msg = kind.upper() + " detected | " + message
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' $HTTP_PORTS ' +
-                                       '(msg:"' + message + '"; ' +
+                                       '(msg:"' + msg + '"; ' +
                                        'flow:to_server,established; ' +
                                        'content:"' + value + '"; ' +
                                        'http_uri; ' +
@@ -171,6 +176,7 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'domain':
+                        msg = kind.upper() + " detected | " + message
                         domainparts = value.split('.')
                         content = ''
                         for part in domainparts:
@@ -179,7 +185,7 @@ def rulegen(entities, options):
                         content += '|00|'
                         ruleset.append('alert udp $HOME_NET any -> ' +
                                        options.dest + ' 53 ' +
-                                       '(msg:"' + message + '"; ' +
+                                       '(msg:"' + msg + '"; ' +
                                        'byte_test:1,!&,0xF8,2; ' +
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
@@ -189,7 +195,7 @@ def rulegen(entities, options):
                         sid += 1
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' 53 ' +
-                                       '(msg:"' + message + '"; ' +
+                                       '(msg:"' + msg + '"; ' +
                                        'byte_test:1,!&,0xF8,2; ' +
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
@@ -198,15 +204,17 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'email' or kind == 'email-subject':
+                        msg = kind.upper() + " detected | " + message
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' $SMTP_PORTS ' +
-                                       '(msg:"' + message + '"; ' +
+                                       '(msg:"' + msg + '"; ' +
                                        'content:"' + value + '"; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:1' +
                                        ')')
                         sid += 1
                     if kind == 'snort':
+                        msg = kind.upper() + " detected | " + message
                         ruleset.append(value)
     if options.verbose:
         print("U) Ruleset is: ")

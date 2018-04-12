@@ -14,6 +14,8 @@ import optparse
 import requests
 import urllib3
 import time
+import smtplib
+import email
 import eiqcalls
 import eiqjson
 import pprint
@@ -259,17 +261,48 @@ def download(feedID, options):
 
 
 def process(ruleset, options):
-    timestamp = time.strftime('%Y%m%d-%H%M%S-')
+    ruleset = ('\n'.join(ruleset))+'\n'
     if options.action == 'mail' or options.action == 'm':
-        pass
+        timestamp = time.strftime('%Y-%m-%d, %H:%M:%S')
+        if options.verbose:
+            print("U) Sending ruleset to e-mail ... ")
+            print("U) From:    " + settings.EMAILFROM)
+            print("U) To:      " + settings.EMAILTO)
+            print("U) Subject: " + settings.EMAILSUBJECT)
+        if not options.simulate:
+            msg = email.message.EmailMessage()
+            msg.set_content(ruleset)
+            msg['Subject'] = settings.EMAILSUBJECT + " for " + timestamp
+            msg['From'] = settings.EMAILFROM
+            msg['To'] = settings.EMAILTO
+            msg['Date'] = email.utils.formatdate()
+            msg['Message-Id'] = email.utils.make_msgid()
+            content = "This email contains the output of the eiq_to_ids.py "
+            content += "run for " + timestamp + ". The generated ruleset "
+            content += "has been included as a text file attachment.\n"
+            content += "\n"
+            content += "Kind regards,\n"
+            content += "\n"
+            content += settings.EMAILFROM
+            content += " - (this was an automatically generated message)"
+            msg.set_content(content)
+            msg.add_attachment(ruleset)
+            smtp = smtplib.SMTP(settings.EMAILSERVER)
+            try:
+                smtp.send_message(msg)
+            except:
+                print("E) An error occurred sending e-mail!")
+        else:
+            print("U) Not sending e-mail as simulate option is set!")
     if options.action == 'file' or options.action == 'f':
+        timestamp = time.strftime('%Y%m%d-%H%M%S-')
         try:
             if not options.simulate:
                 if options.verbose:
                     print("U) Writing ruleset to file: " +
                           timestamp + settings.OUTPUTFILE)
                 with open(timestamp + settings.OUTPUTFILE, 'w') as file:
-                    file.writelines(('\n'.join(ruleset)+'\n'))
+                    file.writelines(ruleset)
             else:
                 print("U) Not writing anything to disk, as " +
                       "simulation option was set!")

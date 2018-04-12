@@ -177,6 +177,9 @@ def rulegen(entities, options):
                         sid += 1
                     if kind == 'snort':
                         ruleset.append(value)
+    if options.verbose:
+        print("U) Ruleset is: ")
+        print(("\n".join(ruleset)))
     return ruleset
 
 
@@ -196,42 +199,41 @@ def download(feedID, options):
     eiqToken = eiqAPI.do_auth()
     eiqHeaders = {}
     eiqHeaders['Authorization'] = 'Bearer %s' % (eiqToken['token'],)
-    if not options.simulate:
-        try:
-            if options.verbose:
-                print("U) Contacting " + eiqHost + eiqFeed + ' ...')
-            response = eiqAPI.do_call(endpt=eiqFeed,
-                                      headers=eiqHeaders,
-                                      method='GET')
-        except:
-            raise
-            print("E) An error occurred contacting the EIQ URL at " +
-                  feedURL)
-        if not response or ('errors' in response):
-            if response:
-                for err in response['errors']:
-                    print('[error %d] %s' % (err['status'], err['title']))
-                    print('\t%s' % (err['detail'], ))
-            else:
-                print('unable to get a response from host')
-                sys.exit(1)
-        if 'content_blocks' not in response['data']:
-            if options.verbose:
-                print("E) No content blocks in feed ID!")
+    try:
+        if options.verbose:
+            print("U) Contacting " + eiqHost + eiqFeed + ' ...')
+        response = eiqAPI.do_call(endpt=eiqFeed,
+                                  headers=eiqHeaders,
+                                  method='GET')
+    except:
+        raise
+        print("E) An error occurred contacting the EIQ URL at " +
+              feedURL)
+    if not response or ('errors' in response):
+        if response:
+            for err in response['errors']:
+                print('[error %d] %s' % (err['status'], err['title']))
+                print('\t%s' % (err['detail'], ))
         else:
-            if options.verbose:
-                print("U) Attempting to download latest feed content ...")
-            content_block = response['data']['content_blocks'][0]
-            content_block = content_block.replace(settings.EIQVERSION, "")
-            response = eiqAPI.do_call(endpt=content_block,
-                                      headers=eiqHeaders,
-                                      method='GET')
-            if options.verbose:
-                pprint.pprint(response)
-            if 'entities' not in response:
-                print("E) No entities in response!")
-            else:
-                return response['entities']
+            print('unable to get a response from host')
+            sys.exit(1)
+    if 'content_blocks' not in response['data']:
+        if options.verbose:
+            print("E) No content blocks in feed ID!")
+    else:
+        if options.verbose:
+            print("U) Attempting to download latest feed content ...")
+        content_block = response['data']['content_blocks'][0]
+        content_block = content_block.replace(settings.EIQVERSION, "")
+        response = eiqAPI.do_call(endpt=content_block,
+                                  headers=eiqHeaders,
+                                  method='GET')
+        if options.verbose:
+            pprint.pprint(response)
+        if 'entities' not in response:
+            print("E) No entities in response!")
+        else:
+            return response['entities']
 
 
 def process(ruleset, options):
@@ -240,11 +242,15 @@ def process(ruleset, options):
         pass
     if options.action == 'file' or options.action == 'f':
         try:
-            if options.verbose:
-                print("U) Writing ruleset to file: " +
-                      timestamp + settings.OUTPUTFILE)
-            with open(timestamp + settings.OUTPUTFILE, 'w') as file:
-                file.writelines(('\n'.join(ruleset)+'\n'))
+            if not options.simulate:
+                if options.verbose:
+                    print("U) Writing ruleset to file: " +
+                          timestamp + settings.OUTPUTFILE)
+                with open(timestamp + settings.OUTPUTFILE, 'w') as file:
+                    file.writelines(('\n'.join(ruleset)+'\n'))
+            else:
+                print("U) Not writing anything to disk, as " +
+                      "simulation option was set!")
         except:
             print("E) An error occurred writing to disk!")
 

@@ -16,6 +16,7 @@ import urllib3
 import time
 import smtplib
 import email
+import unicodedata
 import eiqcalls
 import eiqjson
 import pprint
@@ -102,6 +103,7 @@ def rulegen(entities, options):
                           " | Actor: " + ''.join(actor) + \
                           " | " + ''.join(description)
                 message.replace('"', '')
+                message = unicodedata.normalize('NFKD', message)
             for kind in entity[title]:
                 for value in entity[title][kind]:
                     if kind == 'ipv4':
@@ -112,7 +114,7 @@ def rulegen(entities, options):
                                        'gid:1; ' +
                                        'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1;' +
+                                       'rev:1' +
                                        ')')
                         sid += 1
                     if kind == 'ipv6':
@@ -123,7 +125,7 @@ def rulegen(entities, options):
                                        'gid:1; ' +
                                        'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1;' +
+                                       'rev:1' +
                                        ')')
                         sid += 1
                     if kind == 'file':
@@ -133,7 +135,7 @@ def rulegen(entities, options):
                                        'flow:to_server,established; ' +
                                        'content:"' + value + '"; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1;' +
+                                       'rev:1' +
                                        ')')
                         sid += 1
                     if 'hash-' in kind:
@@ -144,11 +146,11 @@ def rulegen(entities, options):
                             ruleset.append('alert tcp $HOME_NET any -> ' +
                                            options.dest + ' any ' +
                                            '(msg:"' + message + '"; ' +
-                                           'hash:' + type + "; "
-                                           'protected_content:"' + value +
+                                           'content:"' + value +
                                            '"; ' +
+                                           'hash:' + type + "; "
                                            'sid:' + str(sid) + '; ' +
-                                           'rev:1;' +
+                                           'rev:1' +
                                            ')')
                             sid += 1
                     if kind == 'uri':
@@ -158,9 +160,9 @@ def rulegen(entities, options):
                                        'flow:to_server,established; ' +
                                        'content:"' + value + '"; ' +
                                        'http_uri; ' +
-                                       'service:http; ' +
+                                       'metadata: service http; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1;' +
+                                       'rev:1' +
                                        ')')
                         sid += 1
                     if kind == 'domain':
@@ -177,7 +179,7 @@ def rulegen(entities, options):
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1;' +
+                                       'rev:1' +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp $HOME_NET any -> ' +
@@ -187,7 +189,7 @@ def rulegen(entities, options):
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1;' +
+                                       'rev:1' +
                                        ')')
                         sid += 1
                     if kind == 'email' or kind == 'email-subject':
@@ -196,7 +198,7 @@ def rulegen(entities, options):
                                        '(msg:"' + message + '"; ' +
                                        'content:"' + value + '"; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1;' +
+                                       'rev:1' +
                                        ')')
                         sid += 1
                     if kind == 'snort':

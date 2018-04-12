@@ -48,7 +48,8 @@ def transform(feedJSON, feedID, options):
                         'email': [],
                         'email-subject': [],
                         'file': [],
-                        'ip': [],
+                        'ipv4': [],
+                        'ipv6': [],
                         'hash-md5': [],
                         'hash-sha1': [],
                         'hash-sha256': [],
@@ -101,9 +102,20 @@ def rulegen(entities, options):
                 message.replace('"', '')
             for kind in entity[title]:
                 for value in entity[title][kind]:
-                    if kind == 'ip':
+                    if kind == 'ipv4':
                         ruleset.append('alert ip $HOME_NET any -> ' +
-                                       options.dest + ' any ' +
+                                       value + ' any ' +
+                                       '(msg:"' + message + '"; ' +
+                                       'flow:to_server,established; ' +
+                                       'gid:1; ' +
+                                       'priority:1; ' +
+                                       'sid:' + str(sid) + '; ' +
+                                       'rev:1;' +
+                                       ')')
+                        sid += 1
+                    if kind == 'ipv6':
+                        ruleset.append('alert ip $HOME_NET any -> ' +
+                                       value + ' any ' +
                                        '(msg:"' + message + '"; ' +
                                        'flow:to_server,established; ' +
                                        'gid:1; ' +

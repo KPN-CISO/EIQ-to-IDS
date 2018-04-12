@@ -168,7 +168,17 @@ def rulegen(entities, options):
                             content += '|' + hex(len(part))[2:].zfill(2) + \
                                        '|' + part
                         content += '|00|'
-                        ruleset.append('alert any $HOME_NET any -> ' +
+                        ruleset.append('alert udp $HOME_NET any -> ' +
+                                       options.dest + ' 53 ' +
+                                       '(msg:"' + message + '"; ' +
+                                       'byte_test:1,!&,0xF8,2; ' +
+                                       'content:"' + content + '"; ' +
+                                       'fast_pattern:only; ' +
+                                       'sid:' + str(sid) + '; ' +
+                                       'rev:1;' +
+                                       ')')
+                        sid += 1
+                        ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' 53 ' +
                                        '(msg:"' + message + '"; ' +
                                        'byte_test:1,!&,0xF8,2; ' +

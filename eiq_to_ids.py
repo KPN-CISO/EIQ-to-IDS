@@ -13,7 +13,7 @@ import re
 import optparse
 import requests
 import urllib3
-import datetime
+import time
 import eiqcalls
 import eiqjson
 import pprint
@@ -45,6 +45,8 @@ def transform(feedJSON, feedID, options):
                         'actor-id': [],
                         'description': [description],
                         'domain': [],
+                        'email': [],
+                        'email-subject': [],
                         'file': [],
                         'ip': [],
                         'hash-md5': [],
@@ -83,7 +85,7 @@ def cleanup(text=None):
 def rulegen(entities, options):
     ruleset = []
     if options.type == 's':
-        if options.verbose:
+        if options.verbose: 
             print("U) Building Snort/SourceFire rules ...")
         sid = int(options.sid)
         for entity in entities:
@@ -92,7 +94,7 @@ def rulegen(entities, options):
                 if not actor:
                     actor = ['unknown']
                 tlp = entity[title]['tlp']
-                description = options.name + " | " + title
+                description = cleanup(options.name + " | " + title)
                 message = "TLP:" + ''.join(tlp) + \
                           " | Actor: " + ''.join(actor) + \
                           " | " + ''.join(description)
@@ -102,7 +104,7 @@ def rulegen(entities, options):
                     if kind == 'ip':
                         ruleset.append('alert ip $HOME_NET any -> ' +
                                        options.dest + ' any ' +
-                                       '(msg: "' + message + '"; ' +
+                                       '(msg:"' + message + '"; ' +
                                        'flow:to_server,established; ' +
                                        'gid:1; ' +
                                        'priority:1; ' +
@@ -113,7 +115,7 @@ def rulegen(entities, options):
                     if kind == 'file':
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' any ' +
-                                       '(msg: "' + message + '"; ' +
+                                       '(msg:"' + message + '"; ' +
                                        'flow:to_server,established; ' +
                                        'content:"' + value + '"; ' +
                                        'sid:' + str(sid) + '; ' +
@@ -127,18 +129,18 @@ def rulegen(entities, options):
                            type == 'sha512':
                             ruleset.append('alert tcp $HOME_NET any -> ' +
                                            options.dest + ' any ' +
-                                           '(msg: "' + message + '"; ' +
+                                           '(msg:"' + message + '"; ' +
                                            'hash:' + type + "; "
                                            'protected_content:"' + value +
                                            '"; ' +
                                            'sid:' + str(sid) + '; ' +
                                            'rev:1;' +
                                            ')')
-                        sid += 1
+                            sid += 1
                     if kind == 'uri':
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' $HTTP_PORTS ' +
-                                       '(msg: "' + message + '"; ' +
+                                       '(msg:"' + message + '"; ' +
                                        'flow:to_server,established; ' +
                                        'content:"' + value + '"; ' +
                                        'http_uri; ' +
@@ -156,13 +158,23 @@ def rulegen(entities, options):
                         content += '|00|'
                         ruleset.append('alert any $HOME_NET any -> ' +
                                        options.dest + ' 53 ' +
-                                       '(msg: "' + message + '"; ' +
+                                       '(msg:"' + message + '"; ' +
                                        'byte_test:1,!&,0xF8,2; ' +
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:1;' +
                                        ')')
+                        sid += 1
+                    if kind == 'email' or kind == 'email-subject':
+                        ruleset.append('alert tcp $HOME_NET any -> ' +
+                                       options.dest + ' $SMTP_PORTS ' +
+                                       '(msg:"' + message + '"; ' +
+                                       'content:"' + value + '"; ' +
+                                       'sid:' + str(sid) + '; ' +
+                                       'rev:1;' +
+                                       ')')
+                        sid += 1
                     if kind == 'snort':
                         ruleset.append(value)
     return ruleset
@@ -202,6 +214,7 @@ def download(feedID, options):
                     print('\t%s' % (err['detail'], ))
             else:
                 print('unable to get a response from host')
+                sys.exit(1)
         if 'content_blocks' not in response['data']:
             if options.verbose:
                 print("E) No content blocks in feed ID!")
@@ -211,8 +224,8 @@ def download(feedID, options):
             content_block = response['data']['content_blocks'][0]
             content_block = content_block.replace(settings.EIQVERSION, "")
             response = eiqAPI.do_call(endpt=content_block,
-                                      headers=eiqHeaders,
-                                      method='GET')
+                                  headers=eiqHeaders,
+                                  method='GET')
             if options.verbose:
                 pprint.pprint(response)
             if 'entities' not in response:
@@ -220,9 +233,25 @@ def download(feedID, options):
             else:
                 return response['entities']
 
+
+def process(ruleset, options):
+    timestamp = time.strftime('%Y%m%d-%H%M%S-')
+    if options.action == 'mail' or options.action == 'm':
+        pass
+    if options.action == 'file' or options.action == 'f':
+        try:
+            if options.verbose:
+                print("U) Writing ruleset to file: " +
+                      timestamp + settings.OUTPUTFILE)
+            with open(timestamp + settings.OUTPUTFILE, 'w') as file:
+                file.writelines(('\n'.join(ruleset)+'\n'))
+        except:
+            print("E) An error occurred writing to disk!")
+
+
 if __name__ == "__main__":
     cli = optparse.OptionParser(usage="usage: %prog [-v | -t | -s " +
-                                      "| -n] <EIQ feed ID>")
+                                      "| -n | -d | -a] <EIQ feed ID>")
     cli.add_option('-v', '--verbose',
                    dest='verbose',
                    action='store_true',
@@ -258,6 +287,12 @@ if __name__ == "__main__":
                    help='[optional] Override the default comment from ' +
                         'the configuration file (default: COMMENT field ' +
                         'from the settings.py file)')
+    cli.add_option('-a', '--action',
+                   dest='action',
+                   default=settings.ACTION,
+                   help='Specify the action to take with the generated ' +
+                        'ruleset: [f]ile, [m]ail (default: write to ' +
+                        'the [f]ilename specified in settings.py')
     (options, args) = cli.parse_args()
     if len(args) < 1:
         cli.print_help()
@@ -274,5 +309,5 @@ if __name__ == "__main__":
         feedDict = download(feedID, options)
         entities = transform(feedDict, feedID, options)
         ruleset = rulegen(entities, options)
-        for rule in ruleset:
-            print(rule)
+        if ruleset:
+            process(ruleset, options)

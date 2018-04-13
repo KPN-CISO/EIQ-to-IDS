@@ -92,6 +92,10 @@ def rulegen(entities, options):
     if options.type == 's':
         if options.verbose:
             print("U) Building Snort/SourceFire rules ...")
+        if not options.rev:
+            rev = time.strftime('%Y%m%d00')
+        else:
+            rev = int(options.rev)
         sid = int(options.sid)
         for entity in entities:
             for title in entity:
@@ -119,7 +123,7 @@ def rulegen(entities, options):
                                        'gid:1; ' +
                                        'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert ip ' + value + ' any -> ' +
@@ -129,7 +133,7 @@ def rulegen(entities, options):
                                        'gid:1; ' +
                                        'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                     if kind == 'file':
@@ -142,7 +146,7 @@ def rulegen(entities, options):
                                        'flow:to_server,established; ' +
                                        'content:"|' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
 #                    if 'hash-' in kind:
@@ -157,7 +161,7 @@ def rulegen(entities, options):
 #                                           '"; ' +
 #                                           'hash:' + type + "; "
 #                                           'sid:' + str(sid) + '; ' +
-#                                           'rev:1' +
+#                                           'rev:' + str(rev) +
 #                                           ')')
 #                            sid += 1
                     if kind == 'uri':
@@ -172,7 +176,7 @@ def rulegen(entities, options):
                                        'http_uri; ' +
                                        'metadata: service http; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                     if kind == 'domain':
@@ -190,7 +194,7 @@ def rulegen(entities, options):
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp $HOME_NET any -> ' +
@@ -200,7 +204,7 @@ def rulegen(entities, options):
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                     if kind == 'email' or kind == 'email-subject':
@@ -212,7 +216,7 @@ def rulegen(entities, options):
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp $HOME_NET any -> ' +
@@ -220,7 +224,7 @@ def rulegen(entities, options):
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp $HOME_NET any -> ' +
@@ -228,7 +232,7 @@ def rulegen(entities, options):
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp ' + options.dest +
@@ -236,7 +240,7 @@ def rulegen(entities, options):
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp ' + options.dest +
@@ -244,7 +248,7 @@ def rulegen(entities, options):
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp ' + options.dest +
@@ -252,7 +256,7 @@ def rulegen(entities, options):
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:1' +
+                                       'rev:' + str(rev) +
                                        ')')
                         sid += 1
                     if kind == 'snort':
@@ -395,10 +399,18 @@ if __name__ == "__main__":
                         'the -v/--verbose flag for debugging purposes.')
     cli.add_option('-i', '--sid',
                    dest='sid',
-                   default=1000000,
-                   help='[optional] Specify the rule id to start counting ' +
+                   default=10000000,
+                   help='[optional] Specify the sid to start counting ' +
+                        'from (default: 10000000)')
+    cli.add_option('-r', '--rev',
+                   dest='rev',
+                   default=None,
+                   help='[optional] Specify the rev id to start counting ' +
                         'from. Particularly important when creating Snort ' +
-                        'SourceFire rulesets (default: 1000000)')
+                        'SourceFire rulesets, as not all instances support ' +
+                        'easy deletion/disabling. Using the rev counter ' +
+                        'ensures that the rules can be loaded correctly ' +
+                        '(default: use date/time: YYYYMMDD00)')
     cli.add_option('-n', '--name',
                    dest='name',
                    default=settings.COMMENT,

@@ -162,11 +162,13 @@ def rulegen(entities, options):
 #                            sid += 1
                     if kind == 'uri':
                         msg = kind.upper() + " detected | " + message
+                        value = ' '.join("{:02x}".format(ord(c))
+                                         for c in value)
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' $HTTP_PORTS ' +
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server,established; ' +
-                                       'content:"' + value + '"; ' +
+                                       'content:"|' + value + '|"; ' +
                                        'http_uri; ' +
                                        'metadata: service http; ' +
                                        'sid:' + str(sid) + '; ' +

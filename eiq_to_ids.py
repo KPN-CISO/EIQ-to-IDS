@@ -17,6 +17,7 @@ import time
 import smtplib
 import email
 import unicodedata
+import string
 import eiqcalls
 import eiqjson
 import pprint
@@ -99,15 +100,17 @@ def rulegen(entities, options):
                     actor = ['unknown']
                 tlp = entity[title]['tlp']
                 description = cleanup(options.name + " | " +
-                                      title + " | ") 
+                                      title)
                 message = "TLP:" + ''.join(tlp) + \
                           " | Actor: " + ''.join(actor) + \
                           " | " + ''.join(description)
                 message = message.replace('"', '')
-                message = unicodedata.normalize('NFC', message)
+                message = unicodedata.normalize('NFKD', message)
+                message = ''.join(filter(lambda x: x in string.printable,
+                                         message))
             for kind in entity[title]:
                 for value in entity[title][kind]:
-                    if kind == 'ipv4':
+                    if kind == 'ipv4' or kind == 'ipv6':
                         msg = kind.upper() + " detected | " + message
                         ruleset.append('alert ip $HOME_NET any -> ' +
                                        value + ' any ' +
@@ -119,10 +122,8 @@ def rulegen(entities, options):
                                        'rev:1' +
                                        ')')
                         sid += 1
-                    if kind == 'ipv6':
-                        msg = kind.upper() + " detected | " + message
-                        ruleset.append('alert ip $HOME_NET any -> ' +
-                                       value + ' any ' +
+                        ruleset.append('alert ip ' + value + ' any -> ' +
+                                       '$HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server,established; ' +
                                        'gid:1; ' +
@@ -133,16 +134,13 @@ def rulegen(entities, options):
                         sid += 1
                     if kind == 'file':
                         msg = kind.upper() + " detected | " + message
-                        value = cleanup(value)
-                        value = value.replace('"', '')
-                        value = unicodedata.normalize('NFC', message)
-                        value = '|'.join("{:02x}".format(ord(c)) \
-                                for c in value)
+                        value = ' '.join("{:02x}".format(ord(c))
+                                         for c in value)
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server,established; ' +
-                                       'content:|"' + value + '|"; ' +
+                                       'content:"|' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:1' +
                                        ')')
@@ -205,10 +203,52 @@ def rulegen(entities, options):
                         sid += 1
                     if kind == 'email' or kind == 'email-subject':
                         msg = kind.upper() + " detected | " + message
+                        value = ' '.join("{:02x}".format(ord(c))
+                                         for c in value)
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' $SMTP_PORTS ' +
                                        '(msg:"' + msg + '"; ' +
-                                       'content:"' + value + '"; ' +
+                                       'content:"|' + value + '|"; ' +
+                                       'sid:' + str(sid) + '; ' +
+                                       'rev:1' +
+                                       ')')
+                        sid += 1
+                        ruleset.append('alert tcp $HOME_NET any -> ' +
+                                       options.dest + ' $POP-3_PORTS ' +
+                                       '(msg:"' + msg + '"; ' +
+                                       'content:"|' + value + '|"; ' +
+                                       'sid:' + str(sid) + '; ' +
+                                       'rev:1' +
+                                       ')')
+                        sid += 1
+                        ruleset.append('alert tcp $HOME_NET any -> ' +
+                                       options.dest + ' $IMAP_PORTS ' +
+                                       '(msg:"' + msg + '"; ' +
+                                       'content:"|' + value + '|"; ' +
+                                       'sid:' + str(sid) + '; ' +
+                                       'rev:1' +
+                                       ')')
+                        sid += 1
+                        ruleset.append('alert tcp ' + options.dest +
+                                       ' $SMTP_PORTS -> $HOME_NET any ' +
+                                       '(msg:"' + msg + '"; ' +
+                                       'content:"|' + value + '|"; ' +
+                                       'sid:' + str(sid) + '; ' +
+                                       'rev:1' +
+                                       ')')
+                        sid += 1
+                        ruleset.append('alert tcp ' + options.dest +
+                                       ' $POP-3_PORTS -> $HOME_NET any ' +
+                                       '(msg:"' + msg + '"; ' +
+                                       'content:"|' + value + '|"; ' +
+                                       'sid:' + str(sid) + '; ' +
+                                       'rev:1' +
+                                       ')')
+                        sid += 1
+                        ruleset.append('alert tcp ' + options.dest +
+                                       ' $IMAP_PORTS -> $HOME_NET any ' +
+                                       '(msg:"' + msg + '"; ' +
+                                       'content:"|' + value + '|"; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:1' +
                                        ')')

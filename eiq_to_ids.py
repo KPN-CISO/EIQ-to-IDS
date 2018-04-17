@@ -37,6 +37,8 @@ def transform(feedJSON, feedID, options):
         if 'extracts' in entity:
             if 'description' in entity['data']:
                 description = entity['data']['description']
+            else:
+                description = ''
             if 'meta' in entity:
                 meta = entity['meta']
                 tlp = 'AMBER'

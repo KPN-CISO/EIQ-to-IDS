@@ -419,12 +419,16 @@ if __name__ == "__main__":
                    help='[optional] Override the default comment from ' +
                         'the configuration file (default: COMMENT field ' +
                         'from the settings.py file)')
+    cli.add_option('-m', '--maliciousness',
+                   dest='maliciousness',
+                   default=1,
+                   help='[optional] Set minimum maliciousness')
     cli.add_option('-a', '--action',
                    dest='action',
                    default=settings.ACTION,
                    help='Specify the action to take with the generated ' +
                         'ruleset: [f]ile, [m]ail (default: write to ' +
-                        'the [f]ilename specified in settings.py')
+                        'the [f]ilename specified in settings.py)')
     (options, args) = cli.parse_args()
     if len(args) < 1:
         cli.print_help()

@@ -57,11 +57,8 @@ class EIQApi:
       if self.insecure:
         ssl_ctx.check_hostname = False
         ssl_ctx.verify_mode = ssl.CERT_NONE
-      try:
-        with urllib.request.urlopen(req, context=ssl_ctx) as f:
-          ret = f.read().decode('utf-8')
-      except urllib.error.HTTPError as e:
-        print('An HTTP error occured:', e)
+      with urllib.request.urlopen(req, context=ssl_ctx) as f:
+        ret = f.read().decode('utf-8')
     else:
       with urllib.request.urlopen(req) as f:
         ret = f.read().decode('utf-8')

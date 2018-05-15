@@ -122,7 +122,7 @@ def rulegen(entities, options):
                                        value + ' any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server; ' +
-                                       'gid:1; ' +
+#                                       'gid:1; ' +
                                        'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
@@ -132,7 +132,7 @@ def rulegen(entities, options):
                                        '$HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server; ' +
-                                       'gid:1; ' +
+#                                       'gid:1; ' +
                                        'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
@@ -185,7 +185,7 @@ def rulegen(entities, options):
                                        options.dest + ' ' +
                                        http_ports + ' ' +
                                        '(msg:"' + msg + '"; ' +
-                                       'flow:to_server; ' +
+                                       'flow:to_server,established; ' +
                                        content +
                                        'metadata: service http; ' +
                                        'priority:1; ' +
@@ -429,9 +429,9 @@ if __name__ == "__main__":
                         'the -v/--verbose flag for debugging purposes.')
     cli.add_option('-i', '--sid',
                    dest='sid',
-                   default=10000000,
+                   default=7000000,
                    help='[optional] Specify the sid to start counting ' +
-                        'from (default: 10000000)')
+                        'from (default: 7000000)')
     cli.add_option('-r', '--rev',
                    dest='rev',
                    default=None,

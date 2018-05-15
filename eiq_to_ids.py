@@ -155,24 +155,32 @@ def rulegen(entities, options):
                     if kind == 'uri':
                         msg = kind.upper() + " detected | " + message
                         uri = urllib3.util.parse_url(value)
-                        value = uri.host
+                        host = uri.host
+                        port = str(uri.port)
                         if uri.port:
                             http_ports = str(uri.port)
-                            value += ':' + http_ports
                         else:
                             http_ports = settings.HTTP_PORTS
                         value += uri.path
                         newvalue = unicodedata.normalize('NFKD', value)
                         newvalue = ''.join(filter(lambda x: x in \
                                                   string.printable, newvalue))
+                        content = ''
                         if newvalue != value:
-                            content = 'content:"|'
+                            content += 'content:"|'
                             value = ' '.join("{:02x}".format(ord(c))
                                              for c in value)
                             content += value + '|"; '
                         else:
-                            content = 'content:"' + value + '"; '
-                            content += 'http_uri; '
+                            content += 'content:"' + uri.host + '"; '
+                            content += 'nocase; fast_pattern:only; '
+                            content += 'http_header; pcre:"/^Host\\x3A[\\x20]+'
+                            content += uri.host
+                            if uri.port:
+                                content += '|3A|' + port
+                            content += '\\r\\n/imH"; '
+                            content += 'content:"' + uri.path[1:] + '"; '
+                            content += 'nocase; http_uri; '
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' ' +
                                        http_ports + ' ' +

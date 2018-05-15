@@ -121,7 +121,7 @@ def rulegen(entities, options):
                         ruleset.append('alert ip $HOME_NET any -> ' +
                                        value + ' any ' +
                                        '(msg:"' + msg + '"; ' +
-                                       'flow:to_server,established; ' +
+                                       'flow:to_server; ' +
                                        'gid:1; ' +
                                        'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
@@ -131,7 +131,7 @@ def rulegen(entities, options):
                         ruleset.append('alert ip ' + value + ' any -> ' +
                                        '$HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
-                                       'flow:to_server,established; ' +
+                                       'flow:to_server; ' +
                                        'gid:1; ' +
                                        'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
@@ -145,38 +145,39 @@ def rulegen(entities, options):
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' any ' +
                                        '(msg:"' + msg + '"; ' +
-                                       'flow:to_server,established; ' +
+                                       'flow:to_server; ' +
                                        'content:"|' + value + '|"; ' +
+                                       'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
                                        ')')
                         sid += 1
-#                    if 'hash-' in kind:
-#                        type = kind.split('-')[1]
-#                        if type == 'md5' or \
-#                           type == 'sha256' or \
-#                           type == 'sha512':
-#                            ruleset.append('alert tcp $HOME_NET any -> ' +
-#                                           options.dest + ' any ' +
-#                                           '(msg:"' + message + '"; ' +
-#                                           'content:"' + value +
-#                                           '"; ' +
-#                                           'hash:' + type + "; "
-#                                           'sid:' + str(sid) + '; ' +
-#                                           'rev:' + str(rev) +
-#                                           ')')
-#                            sid += 1
                     if kind == 'uri':
                         msg = kind.upper() + " detected | " + message
-                        value = ' '.join("{:02x}".format(ord(c))
-                                         for c in value)
+                        uri = urllib3.util.parse_url(value)
+                        if uri.port:
+                            http_ports = str(uri.port)
+                        else:
+                            http_ports = settings.HTTP_PORTS
+                        newvalue = unicodedata.normalize('NFKD', value)
+                        newvalue = ''.join(filter(lambda x: x in \
+                                                  string.printable, newvalue))
+                        if newvalue != value:
+                            content = 'content:"|'
+                            value = ' '.join("{:02x}".format(ord(c))
+                                             for c in value)
+                            content += value + '|"; '
+                        else:
+                            content = 'content:"' + value + '"; '
+                            content += 'http_uri; '
                         ruleset.append('alert tcp $HOME_NET any -> ' +
-                                       options.dest + ' $HTTP_PORTS ' +
+                                       options.dest + ' ' +
+                                       http_ports + ' ' +
                                        '(msg:"' + msg + '"; ' +
-                                       'flow:to_server,established; ' +
-                                       'content:"|' + value + '|"; ' +
-                                       'http_uri; ' +
+                                       'flow:to_server; ' +
+                                       content +
                                        'metadata: service http; ' +
+                                       'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
                                        ')')
@@ -195,6 +196,7 @@ def rulegen(entities, options):
                                        'byte_test:1,!&,0xF8,2; ' +
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
+                                       'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
                                        ')')
@@ -205,6 +207,7 @@ def rulegen(entities, options):
                                        'byte_test:1,!&,0xF8,2; ' +
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
+                                       'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
                                        ')')
@@ -214,49 +217,61 @@ def rulegen(entities, options):
                         value = ' '.join("{:02x}".format(ord(c))
                                          for c in value)
                         ruleset.append('alert tcp $HOME_NET any -> ' +
-                                       options.dest + ' $SMTP_PORTS ' +
-                                       '(msg:"' + msg + '"; ' +
+                                       options.dest + ' ' +
+                                       settings.SMTP_PORTS +
+                                       ' (msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
+                                       'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp $HOME_NET any -> ' +
-                                       options.dest + ' $POP-3_PORTS ' +
-                                       '(msg:"' + msg + '"; ' +
+                                       options.dest + ' ' +
+                                       settings.POP3_PORTS +
+                                       ' (msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
+                                       'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp $HOME_NET any -> ' +
-                                       options.dest + ' $IMAP_PORTS ' +
+                                       options.dest + ' ' +
+                                       settings.IMAP_PORTS + ' ' +
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
+                                       'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp ' + options.dest +
-                                       ' $SMTP_PORTS -> $HOME_NET any ' +
+                                       ' ' + settings.SMTP_PORTS +
+                                       ' -> $HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
+                                       'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp ' + options.dest +
-                                       ' $POP-3_PORTS -> $HOME_NET any ' +
+                                       ' ' + settings.POP3_PORTS +
+                                       ' -> $HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
+                                       'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp ' + options.dest +
-                                       ' $IMAP_PORTS -> $HOME_NET any ' +
+                                       ' ' + settings.IMAP_PORTS +
+                                       ' -> $HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
+                                       'priority:1; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'rev:' + str(rev) +
                                        ')')
@@ -293,9 +308,9 @@ def download(feedID, options):
                                   headers=eiqHeaders,
                                   method='GET')
     except:
-        raise
         print("E) An error occurred contacting the EIQ URL at " +
               feedURL)
+        raise
     if not response or ('errors' in response):
         if response:
             for err in response['errors']:
@@ -355,6 +370,7 @@ def process(ruleset, options):
                 smtp.send_message(msg)
             except:
                 print("E) An error occurred sending e-mail!")
+                raise
         else:
             print("U) Not sending e-mail as simulate option is set!")
     if options.action == 'file' or options.action == 'f':
@@ -371,6 +387,7 @@ def process(ruleset, options):
                       "simulation option was set!")
         except:
             print("E) An error occurred writing to disk!")
+            raise
 
 
 if __name__ == "__main__":
@@ -441,7 +458,7 @@ if __name__ == "__main__":
             feedID = int(args[0])
         except:
             print("E) Please specify a numeric feedID only.")
-            sys.exit(1)
+            raise
         feedDict = download(feedID, options)
         entities = transform(feedDict, feedID, options)
         ruleset = rulegen(entities, options)

@@ -155,10 +155,13 @@ def rulegen(entities, options):
                     if kind == 'uri':
                         msg = kind.upper() + " detected | " + message
                         uri = urllib3.util.parse_url(value)
+                        value = uri.host
                         if uri.port:
                             http_ports = str(uri.port)
+                            value += ':' + http_ports
                         else:
                             http_ports = settings.HTTP_PORTS
+                        value += uri.path
                         newvalue = unicodedata.normalize('NFKD', value)
                         newvalue = ''.join(filter(lambda x: x in \
                                                   string.printable, newvalue))

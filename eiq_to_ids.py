@@ -99,6 +99,8 @@ def rulegen(entities, options):
         else:
             rev = int(options.rev)
         sid = int(options.sid)
+        gid = int(options.gid)
+        priority = int(options.priority)
         for entity in entities:
             for title in entity:
                 actor = entity[title]['actor-id']
@@ -122,20 +124,22 @@ def rulegen(entities, options):
                                        value + ' any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server; ' +
-#                                       'gid:1; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert ip ' + value + ' any -> ' +
                                        '$HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server; ' +
-#                                       'gid:1; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                     if kind == 'file':
@@ -147,9 +151,11 @@ def rulegen(entities, options):
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server; ' +
                                        'content:"|' + value + '|"; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                     if kind == 'uri':
@@ -188,9 +194,11 @@ def rulegen(entities, options):
                                        'flow:to_server,established; ' +
                                        content +
                                        'metadata: service http; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                     if kind == 'domain':
@@ -207,9 +215,11 @@ def rulegen(entities, options):
                                        'byte_test:1,!&,0xF8,2; ' +
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp $HOME_NET any -> ' +
@@ -218,9 +228,11 @@ def rulegen(entities, options):
                                        'byte_test:1,!&,0xF8,2; ' +
                                        'content:"' + content + '"; ' +
                                        'fast_pattern:only; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                     if kind == 'email' or kind == 'email-subject':
@@ -232,9 +244,11 @@ def rulegen(entities, options):
                                        settings.SMTP_PORTS +
                                        ' (msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp $HOME_NET any -> ' +
@@ -242,9 +256,11 @@ def rulegen(entities, options):
                                        settings.POP3_PORTS +
                                        ' (msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp $HOME_NET any -> ' +
@@ -252,9 +268,11 @@ def rulegen(entities, options):
                                        settings.IMAP_PORTS + ' ' +
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp ' + options.dest +
@@ -262,9 +280,11 @@ def rulegen(entities, options):
                                        ' -> $HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp ' + options.dest +
@@ -272,9 +292,11 @@ def rulegen(entities, options):
                                        ' -> $HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                         ruleset.append('alert tcp ' + options.dest +
@@ -282,9 +304,11 @@ def rulegen(entities, options):
                                        ' -> $HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
-                                       'priority:1; ' +
+                                       'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
-                                       'rev:' + str(rev) +
+                                       'gid:' + str(gid) + '; ' +
+                                       'classtype:' + options.classtype +
+                                       '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
                     if kind == 'snort':
@@ -415,6 +439,12 @@ if __name__ == "__main__":
                    default='s',
                    help='[optional] Set the type of IDS / SIEM rule you ' +
                         'wish to create: [s]ourcefire/Snort (default). ')
+    cli.add_option('-a', '--action',
+                   dest='action',
+                   default=settings.ACTION,
+                   help='Specify the action to take with the generated ' +
+                        'ruleset: [f]ile, [m]ail (default: write to ' +
+                        'the [f]ilename specified in settings.py)')
     cli.add_option('-d', '--dest',
                    dest='dest',
                    default='any',
@@ -429,9 +459,26 @@ if __name__ == "__main__":
                         'the -v/--verbose flag for debugging purposes.')
     cli.add_option('-i', '--sid',
                    dest='sid',
-                   default=7000000,
-                   help='[optional] Specify the sid to start counting ' +
-                        'from (default: 7000000)')
+                   default=settings.SID,
+                   help='[optional] Override the sid to start counting ' +
+                        'from (default: ' + str(settings.SID) + ')')
+    cli.add_option('-g', '--gid',
+                   dest='gid',
+                   default=settings.GID,
+                   help='[optional] Override the gid from the configuration ' +
+                        'file (default: ' + str(settings.GID) + ')')
+    cli.add_option('-p', '--priority',
+                   dest='priority',
+                   default=settings.PRIORITY,
+                   help='[optional] Override the default priority from the ' +
+                        'configuration file (default: ' +
+                        str(settings.PRIORITY) + ')')
+    cli.add_option('-c', '--classtype',
+                   dest='classtype',
+                   default=settings.CLASSTYPE,
+                   help='[optional] Override the classtype setting from ' +
+                        'the configuration file (default: ' +
+                        settings.CLASSTYPE + ')')
     cli.add_option('-r', '--rev',
                    dest='rev',
                    default=None,
@@ -451,12 +498,6 @@ if __name__ == "__main__":
                    dest='maliciousness',
                    default=1,
                    help='[optional] Set minimum maliciousness')
-    cli.add_option('-a', '--action',
-                   dest='action',
-                   default=settings.ACTION,
-                   help='Specify the action to take with the generated ' +
-                        'ruleset: [f]ile, [m]ail (default: write to ' +
-                        'the [f]ilename specified in settings.py)')
     (options, args) = cli.parse_args()
     if len(args) < 1:
         cli.print_help()

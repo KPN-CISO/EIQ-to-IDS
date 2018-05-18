@@ -20,6 +20,8 @@ import eiqcalls
 import eiqjson
 import pprint
 import unicodedata
+import pickle
+import hashlib
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -326,10 +328,74 @@ def rulegen(entities, options):
                     if kind == 'snort':
                         msg = kind.upper() + " detected | " + message
                         ruleset.append(value)
+    finalruleset = []
+    sidmap = {}
+    newsidmap = {}
+    newrules = []
+    sidfind = re.compile(r'sid:\d+; ')
+    revfind = re.compile(r' rev:\d+')
+    try:
+        with open(settings.SIDFILE, 'rb') as sidfile:
+            sidmap = pickle.load(sidfile)
+    except IOError:
+        pass
+    for line in ruleset:
+        hashline = sidfind.sub('', line)
+        hashline = revfind.sub('', hashline)
+        rulehash = hashlib.sha256()
+        rulehash.update(hashline.strip().encode('utf-8'))
+        rulehexdigest = rulehash.hexdigest()
+        # Check if a rule already exists in the sidmap file
+        if rulehexdigest in sidmap:
+            existingsid, existingrev = sidmap[rulehexdigest]
+            newsidmap[rulehexdigest] = (existingsid, existingrev)
+            # Check if the revision number of the existing rule is older
+            # than right now. If the existing rule in the sidmap is newer,
+            # something must be wrong; don't do anything and drop the
+            # rule from the final rule list.
+            if existingrev <= rev:
+                # The existing rule is older, so reuse the older SID from
+                # the sidmap file
+                rule = sidfind.sub('sid:' + str(existingsid) + '; ', line)
+                finalruleset.append(rule)
+        else:
+            newrules.append(line)
+        # Start counting at the base sid from the options again
+        newsid = int(options.sid)
+        usedsids = []
+        # Now build a list of the SIDs that are in use in the new sidmap
+        for rulehexdigest in newsidmap:
+            existingsid, existingrev = newsidmap[rulehexdigest]
+            usedsids.append(existingsid)
+        # Since the remainder of the ruleset is rules that did not
+        # previously exist, add them to the final ruleset, while at the
+        # same time reusing the stale SIDs
+        for line in newrules:
+            hashline = sidfind.sub('', line)
+            hashline = revfind.sub('', hashline)
+            rulehash = hashlib.sha256()
+            rulehash.update(hashline.strip().encode('utf-8'))
+            rulehexdigest = rulehash.hexdigest()
+            while line not in finalruleset:
+                # As long as the new rule is not in the final ruleset,
+                # try to find a SID for it that is free
+                if not newsid in usedsids:
+                    rule = sidfind.sub('sid:' + str(newsid) + '; ', line)
+                    newsidmap[rulehexdigest] = (newsid, rev)
+                    finalruleset.append(line)
+                newsid += 1
+    if not options.simulate:
+        try:
+            with open(settings.SIDFILE, 'wb') as sidfile:
+                pickle.dump(newsidmap, sidfile, pickle.HIGHEST_PROTOCOL)
+        except:
+            if options.verbose:
+                print("An error occurred writing the sidmap to disk!")
+                raise
     if options.verbose:
         print("U) Ruleset is: ")
-        print(("\n".join(ruleset)))
-    return ruleset
+        print(("\n".join(finalruleset)))
+    return finalruleset
 
 
 def download(feedID, options):

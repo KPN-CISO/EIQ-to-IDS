@@ -28,12 +28,12 @@ EIQSSLVERIFY=False
 
 # Snort / SourceFire rule settings
 
-# This is used to map EIQ observables to specific SIDs
-# If you delete this file, or it doesn't exist, a
-# completely new ruleset will be generated at the start
-# SID value, otherwise older rules for newer variables
-# will be overwritten with a newer revision for the same
-# SID.
+This is used to map EIQ observables to specific SIDs
+If you delete this file, or it doesn't exist, a
+completely new ruleset will be generated at the start
+SID value, otherwise older rules for newer variables
+will be overwritten with a newer revision for the same
+SID.
 
 SID=7000000
 GID=1
@@ -43,10 +43,10 @@ SIDFILE='snort.sdb'
 
 # HTTP settings
 
-# If you have an HTTP proxy, change the HTTP_PROXYSERVER
-# and -PORT setting from 'None' to its IP. The
-# HTTP_PROXYPORTS setting will then be used to generate rules
-# matching HTTP traffic to the specified proxyserver.
+If you have an HTTP proxy, change the HTTP_PROXYSERVER
+and -PORT setting from 'None' to its IP. The
+HTTP_PROXYPORTS setting will then be used to generate rules
+matching HTTP traffic to the specified proxyserver.
 
 HTTP_PROXYSERVER=None
 HTTP_PROXYSERVERPORT=8080

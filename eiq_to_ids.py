@@ -15,12 +15,15 @@ import requests
 import urllib3
 import time
 import smtplib
-import email
-import unicodedata
 import string
 import eiqcalls
 import eiqjson
 import pprint
+import unicodedata
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import formatdate, make_msgid
 
 from config import settings
 
@@ -161,15 +164,24 @@ def rulegen(entities, options):
                     if kind == 'uri':
                         msg = kind.upper() + " detected | " + message
                         uri = urllib3.util.parse_url(value)
+                        dest = options.dest
                         host = uri.host
                         port = str(uri.port)
-                        if uri.port:
-                            http_ports = str(uri.port)
+                        # Check if we need to write SourceFire/Snort rules
+                        # that need to compensate for proxy traffic
+                        if settings.HTTP_PROXYSERVER:
+                            http_ports = str(settings.HTTP_PROXYSERVERPORT)
+                            dest = settings.HTTP_PROXYSERVER
                         else:
-                            http_ports = settings.HTTP_PORTS
+                            if uri.port:
+                                http_ports = str(uri.port)
+                            else:
+                                http_ports = settings.HTTP_PORTS
+                        # Check if the URI contains UTF/high-ASCII stuff
+                        # that might break SourceFire/Snort parsing
                         value += uri.path
                         newvalue = unicodedata.normalize('NFKD', value)
-                        newvalue = ''.join(filter(lambda x: x in \
+                        newvalue = ''.join(filter(lambda x: x in
                                                   string.printable, newvalue))
                         content = ''
                         if newvalue != value:
@@ -188,7 +200,7 @@ def rulegen(entities, options):
                             content += 'content:"' + uri.path[1:] + '"; '
                             content += 'nocase; http_uri; '
                         ruleset.append('alert tcp $HOME_NET any -> ' +
-                                       options.dest + ' ' +
+                                       dest + ' ' +
                                        http_ports + ' ' +
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server,established; ' +
@@ -377,19 +389,19 @@ def process(ruleset, options):
     ruleset = ('\n'.join(ruleset))+'\n'
     if options.action == 'mail' or options.action == 'm':
         timestamp = time.strftime('%Y-%m-%d, %H:%M:%S')
+        filename = time.strftime('%Y%m%d-%H%M%S-') + settings.OUTPUTFILE
         if options.verbose:
             print("U) Sending ruleset to e-mail ... ")
             print("U) From:    " + settings.EMAILFROM)
             print("U) To:      " + settings.EMAILTO)
             print("U) Subject: " + settings.EMAILSUBJECT)
         if not options.simulate:
-            msg = email.message.EmailMessage()
-            msg.set_content(ruleset)
+            msg = MIMEMultipart()
             msg['Subject'] = settings.EMAILSUBJECT + " for " + timestamp
             msg['From'] = settings.EMAILFROM
             msg['To'] = settings.EMAILTO
-            msg['Date'] = email.utils.formatdate()
-            msg['Message-Id'] = email.utils.make_msgid()
+            msg['Date'] = formatdate()
+            msg['Message-Id'] = make_msgid()
             content = "This email contains the output of the eiq_to_ids.py "
             content += "run for " + timestamp + ". The generated ruleset "
             content += "has been included as a text file attachment.\n"
@@ -398,8 +410,11 @@ def process(ruleset, options):
             content += "\n"
             content += settings.EMAILFROM
             content += " - (this was an automatically generated message)"
-            msg.set_content(content)
-            msg.add_attachment(ruleset)
+            msg.attach(MIMEText(content))
+            part = MIMEApplication(ruleset, Name=filename)
+            content_disposition = 'attachment; filename="%s"' % filename
+            part['Content-Disposition'] = content_disposition
+            msg.attach(part)
             smtp = smtplib.SMTP(settings.EMAILSERVER)
             try:
                 smtp.send_message(msg)

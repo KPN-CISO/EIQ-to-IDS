@@ -179,6 +179,10 @@ def rulegen(entities, options):
                                 http_ports = str(uri.port)
                             else:
                                 http_ports = settings.HTTP_PORTS
+                        # Remove variables in GET request to prevent
+                        # overly long content checks
+                        if '?' in value:
+                            value = value.split('?')[0]
                         # Check if the URI contains UTF/high-ASCII stuff
                         # that might break SourceFire/Snort parsing
                         value += uri.path
@@ -192,22 +196,15 @@ def rulegen(entities, options):
                                              for c in value)
                             content += value + '|"; '
                         else:
-                            content += 'content:"' + uri.host + '"; '
-                            content += 'nocase; fast_pattern:only; '
-                            content += 'http_header; pcre:"/^Host\\x3A[\\x20]+'
-                            content += uri.host
-                            if uri.port:
-                                content += '|3A|' + port
-                            content += '\\r\\n/imH"; '
-                            content += 'content:"' + uri.path[1:] + '"; '
-                            content += 'nocase; http_uri; '
+                            content += 'content:"' + value + '"; '
+                            content += 'fast_pattern:only; '
+                            content += 'nocase; '
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        dest + ' ' +
                                        http_ports + ' ' +
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server,established; ' +
                                        content +
-                                       'metadata: service http; ' +
                                        'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'gid:' + str(gid) + '; ' +

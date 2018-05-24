@@ -180,7 +180,9 @@ def rulegen(entities, options):
                             else:
                                 http_ports = settings.HTTP_PORTS
                         # Remove variables in GET request to prevent
-                        # overly long content checks
+                        # overly long content checks, and strip out the
+                        # http[s] part
+                        value = re.sub(r'https?:\/\/','',value)
                         if '?' in value:
                             value = value.split('?')[0]
                         # Check if the URI contains UTF/high-ASCII stuff

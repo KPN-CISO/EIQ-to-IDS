@@ -333,6 +333,7 @@ def rulegen(entities, options):
     newrules = []
     sidfind = re.compile(r'sid:\d+; ')
     revfind = re.compile(r' rev:\d+')
+    msgfind = re.compile(r'msg:\"[^\"]+\"; ')
     try:
         with open(settings.SIDFILE, 'rb') as sidfile:
             sidmap = pickle.load(sidfile)
@@ -341,6 +342,7 @@ def rulegen(entities, options):
     for line in ruleset:
         hashline = sidfind.sub('', line)
         hashline = revfind.sub('', hashline)
+        hashline = msgfind.sub('', hashline)
         rulehash = hashlib.sha256()
         rulehash.update(hashline.strip().encode('utf-8'))
         rulehexdigest = rulehash.hexdigest()

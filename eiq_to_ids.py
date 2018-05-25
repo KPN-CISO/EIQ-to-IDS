@@ -125,19 +125,8 @@ def rulegen(entities, options):
                 for value in entity[title][kind]:
                     if kind == 'ipv4' or kind == 'ipv6':
                         msg = kind.upper() + " detected | " + message
-                        ruleset.append('alert ip $HOME_NET any -> ' +
+                        ruleset.append('alert ip $HOME_NET any <> ' +
                                        value + ' any ' +
-                                       '(msg:"' + msg + '"; ' +
-                                       'flow:to_server; ' +
-                                       'priority:' + str(priority) + '; ' +
-                                       'sid:' + str(sid) + '; ' +
-                                       'gid:' + str(gid) + '; ' +
-                                       'classtype:' + options.classtype +
-                                       '; ' + 'rev:' + str(rev) +
-                                       ')')
-                        sid += 1
-                        ruleset.append('alert ip ' + value + ' any -> ' +
-                                       '$HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'flow:to_server; ' +
                                        'priority:' + str(priority) + '; ' +

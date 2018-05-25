@@ -162,6 +162,7 @@ def rulegen(entities, options):
                             http_ports = str(settings.HTTP_PROXYSERVERPORT)
                             dest = settings.HTTP_PROXYSERVER
                         else:
+                            dest = [options.dest]
                             if uri.port:
                                 http_ports = str(uri.port)
                             else:
@@ -187,19 +188,20 @@ def rulegen(entities, options):
                             content += 'content:"' + value + '"; '
                             content += 'fast_pattern:only; '
                             content += 'nocase; '
-                        ruleset.append('alert tcp $HOME_NET any -> ' +
-                                       dest + ' ' +
-                                       http_ports + ' ' +
-                                       '(msg:"' + msg + '"; ' +
-                                       'flow:to_server,established; ' +
-                                       content +
-                                       'priority:' + str(priority) + '; ' +
-                                       'sid:' + str(sid) + '; ' +
-                                       'gid:' + str(gid) + '; ' +
-                                       'classtype:' + options.classtype +
-                                       '; ' + 'rev:' + str(rev) +
-                                       ')')
-                        sid += 1
+                        for destination in dest:
+                            ruleset.append('alert tcp $HOME_NET any -> ' +
+                                           destination + ' ' +
+                                           http_ports + ' ' +
+                                           '(msg:"' + msg + '"; ' +
+                                           'flow:to_server,established; ' +
+                                           content +
+                                           'priority:' + str(priority) + '; ' +
+                                           'sid:' + str(sid) + '; ' +
+                                           'gid:' + str(gid) + '; ' +
+                                           'classtype:' + options.classtype +
+                                           '; ' + 'rev:' + str(rev) +
+                                           ')')
+                            sid += 1
                     if kind == 'domain':
                         msg = kind.upper() + " detected | " + message
                         domainparts = value.split('.')
@@ -480,7 +482,7 @@ if __name__ == "__main__":
     cli.add_option('-d', '--dest',
                    dest='dest',
                    default='any',
-                   help='[optional] Set the destination network name you ' +
+                   help='[optional] Set the destination network you ' +
                         'want to create the ruleset for (default: \'any\')')
     cli.add_option('-s', '--simulate',
                    dest='simulate',

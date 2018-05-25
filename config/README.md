@@ -50,7 +50,7 @@ SIDFILE='snort.sdb'
 
 8) HTTP settings
 
-If you have an HTTP proxy, change the HTTP_PROXYSERVER and -PORT setting from 'None' to its IP. The HTTP_PROXYPORTS setting will then be used to generate rules matching HTTP traffic to the specified proxyserver.
+If you have an HTTP proxy, change the HTTP_PROXYSERVER and -PORT setting from 'None' to a Python list with IPs. The HTTP_PROXYPORTS setting will then be used to generate rules matching HTTP traffic to the specified proxyserver.
 
 ```
 HTTP_PROXYSERVER=None

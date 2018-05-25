@@ -242,7 +242,7 @@ def rulegen(entities, options):
                         msg = kind.upper() + " detected | " + message
                         value = ' '.join("{:02x}".format(ord(c))
                                          for c in value)
-                        ruleset.append('alert tcp $HOME_NET any -> ' +
+                        ruleset.append('alert tcp $HOME_NET any <> ' +
                                        options.dest + ' ' +
                                        settings.SMTP_PORTS +
                                        ' (msg:"' + msg + '"; ' +
@@ -254,7 +254,7 @@ def rulegen(entities, options):
                                        '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
-                        ruleset.append('alert tcp $HOME_NET any -> ' +
+                        ruleset.append('alert tcp $HOME_NET any <> ' +
                                        options.dest + ' ' +
                                        settings.POP3_PORTS +
                                        ' (msg:"' + msg + '"; ' +
@@ -266,45 +266,9 @@ def rulegen(entities, options):
                                        '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
-                        ruleset.append('alert tcp $HOME_NET any -> ' +
+                        ruleset.append('alert tcp $HOME_NET any <> ' +
                                        options.dest + ' ' +
                                        settings.IMAP_PORTS + ' ' +
-                                       '(msg:"' + msg + '"; ' +
-                                       'content:"|' + value + '|"; ' +
-                                       'priority:' + str(priority) + '; ' +
-                                       'sid:' + str(sid) + '; ' +
-                                       'gid:' + str(gid) + '; ' +
-                                       'classtype:' + options.classtype +
-                                       '; ' + 'rev:' + str(rev) +
-                                       ')')
-                        sid += 1
-                        ruleset.append('alert tcp ' + options.dest +
-                                       ' ' + settings.SMTP_PORTS +
-                                       ' -> $HOME_NET any ' +
-                                       '(msg:"' + msg + '"; ' +
-                                       'content:"|' + value + '|"; ' +
-                                       'priority:' + str(priority) + '; ' +
-                                       'sid:' + str(sid) + '; ' +
-                                       'gid:' + str(gid) + '; ' +
-                                       'classtype:' + options.classtype +
-                                       '; ' + 'rev:' + str(rev) +
-                                       ')')
-                        sid += 1
-                        ruleset.append('alert tcp ' + options.dest +
-                                       ' ' + settings.POP3_PORTS +
-                                       ' -> $HOME_NET any ' +
-                                       '(msg:"' + msg + '"; ' +
-                                       'content:"|' + value + '|"; ' +
-                                       'priority:' + str(priority) + '; ' +
-                                       'sid:' + str(sid) + '; ' +
-                                       'gid:' + str(gid) + '; ' +
-                                       'classtype:' + options.classtype +
-                                       '; ' + 'rev:' + str(rev) +
-                                       ')')
-                        sid += 1
-                        ruleset.append('alert tcp ' + options.dest +
-                                       ' ' + settings.IMAP_PORTS +
-                                       ' -> $HOME_NET any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'content:"|' + value + '|"; ' +
                                        'priority:' + str(priority) + '; ' +

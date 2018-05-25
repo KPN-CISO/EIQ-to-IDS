@@ -182,7 +182,6 @@ def rulegen(entities, options):
                         # Remove variables in GET request to prevent
                         # overly long content checks, and strip out the
                         # http[s] part
-                        print(value)
                         value = re.sub(r'https?:\/\/','',value)
                         if '?' in value:
                             value = value.split('?')[0]

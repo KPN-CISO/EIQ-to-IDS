@@ -128,7 +128,6 @@ def rulegen(entities, options):
                         ruleset.append('alert ip $HOME_NET any <> ' +
                                        value + ' any ' +
                                        '(msg:"' + msg + '"; ' +
-                                       'flow:to_server; ' +
                                        'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
                                        'gid:' + str(gid) + '; ' +
@@ -143,7 +142,6 @@ def rulegen(entities, options):
                         ruleset.append('alert tcp $HOME_NET any -> ' +
                                        options.dest + ' any ' +
                                        '(msg:"' + msg + '"; ' +
-                                       'flow:to_server; ' +
                                        'content:"|' + value + '|"; ' +
                                        'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +

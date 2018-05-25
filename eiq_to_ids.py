@@ -176,8 +176,6 @@ def rulegen(entities, options):
                             value = value.split('?')[0]
                         # Check if the URI contains UTF/high-ASCII stuff
                         # that might break SourceFire/Snort parsing
-                        if uri.path:
-                            value += uri.path
                         newvalue = unicodedata.normalize('NFKD', value)
                         newvalue = ''.join(filter(lambda x: x in
                                                   string.printable, newvalue))

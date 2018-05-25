@@ -182,12 +182,14 @@ def rulegen(entities, options):
                         # Remove variables in GET request to prevent
                         # overly long content checks, and strip out the
                         # http[s] part
+                        print(value)
                         value = re.sub(r'https?:\/\/','',value)
                         if '?' in value:
                             value = value.split('?')[0]
                         # Check if the URI contains UTF/high-ASCII stuff
                         # that might break SourceFire/Snort parsing
-                        value += uri.path
+                        if uri.path:
+                            value += uri.path
                         newvalue = unicodedata.normalize('NFKD', value)
                         newvalue = ''.join(filter(lambda x: x in
                                                   string.printable, newvalue))

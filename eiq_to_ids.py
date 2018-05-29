@@ -71,18 +71,23 @@ def transform(feedJSON, feedID, options):
                         'yara': []
                     }}
                     for extract in entity['extracts']:
-                        classification = ''
-                        if 'kind' and 'value' in extract:
-                            kind, value = extract['kind'], extract['value']
-                        if 'meta' in extract:
-                            meta = extract['meta']
-                            if 'classification' in meta:
-                                classification = meta['classification']
-                        if classification == 'bad' or \
-                           kind == 'snort' or \
-                           kind == 'yara':
-                            if kind in entry[title]:
-                                entry[title][kind].append(value)
+                        if 'instance_meta' in extract:
+                            instance_meta = extract['instance_meta']
+                            if 'link_types' in instance_meta:
+                                link_types = instance_meta['link_types']
+                                if 'test-mechanism' in link_types:
+                                    classification = ''
+                                    if 'kind' and 'value' in extract:
+                                        kind, value = extract['kind'], extract['value']
+                                    if 'meta' in extract:
+                                        meta = extract['meta']
+                                        if 'classification' in meta:
+                                            classification = meta['classification']
+                                    if classification == 'bad' or \
+                                       kind == 'snort' or \
+                                       kind == 'yara':
+                                        if kind in entry[title]:
+                                            entry[title][kind].append(value)
                     entities.append(entry)
     return entities
 

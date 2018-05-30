@@ -423,7 +423,7 @@ def process(ruleset, options):
             msg = MIMEMultipart()
             msg['Subject'] = settings.EMAILSUBJECT + " for " + timestamp
             msg['From'] = settings.EMAILFROM
-            msg['To'] = settings.EMAILTO
+            msg['To'] = options.email
             msg['Date'] = formatdate()
             msg['Message-Id'] = make_msgid()
             content = "This email contains the output of the eiq_to_ids.py "
@@ -484,6 +484,12 @@ if __name__ == "__main__":
                    help='Specify the action to take with the generated ' +
                         'ruleset: [f]ile, [m]ail (default: write to ' +
                         'the [f]ilename specified in settings.py)')
+    cli.add_option('-e', '--email',
+                   dest='email',
+                   default=settings.EMAILTO,
+                   help='Override the default e-mail address from the ' +
+                        'settings.py configuration file (currently set ' +
+                        'to: ' + settings.EMAILTO + ')')
     cli.add_option('-d', '--dest',
                    dest='dest',
                    default='any',

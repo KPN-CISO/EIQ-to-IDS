@@ -548,7 +548,7 @@ if __name__ == "__main__":
         cli.print_help()
         sys.exit(1)
     if len(args) > 1:
-        print("E) Please specify exactly a feedID from EclecticIQ.")
+        print("E) Please specify exactly one feedID from EclecticIQ.")
         sys.exit(1)
     else:
         try:

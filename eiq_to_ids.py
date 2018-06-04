@@ -311,7 +311,7 @@ def rulegen(entities, options):
             # than right now. If the existing rule in the sidmap is newer,
             # something must be wrong; don't do anything and drop the
             # rule from the final rule list.
-            if existingrev <= rev:
+            if int(existingrev) <= int(rev):
                 # The existing rule is older, so reuse the older SID from
                 # the sidmap file
                 rule = sidfind.sub('sid:' + str(existingsid) + '; ', line)
@@ -331,6 +331,7 @@ def rulegen(entities, options):
         for line in newrules:
             hashline = sidfind.sub('', line)
             hashline = revfind.sub('', hashline)
+            hashline = msgfind.sub('', hashline)
             rulehash = hashlib.sha256()
             rulehash.update(hashline.strip().encode('utf-8'))
             rulehexdigest = rulehash.hexdigest()

@@ -130,6 +130,7 @@ def rulegen(entities, options):
                 for value in entity[title][kind]:
                     if kind == 'ipv4' or kind == 'ipv6':
                         msg = kind.upper() + " detected | " + message
+                        msg += " | rev:" + str(rev)
                         ruleset.append('alert ip $HOME_NET any <> ' +
                                        value + ' any ' +
                                        '(msg:"' + msg + '"; ' +
@@ -142,6 +143,7 @@ def rulegen(entities, options):
                         sid += 1
                     if kind == 'file':
                         msg = kind.upper() + " detected | " + message
+                        msg += " | rev:" + str(rev)
                         value = ' '.join("{:02x}".format(ord(c))
                                          for c in value)
                         ruleset.append('alert tcp $HOME_NET any -> ' +
@@ -157,6 +159,7 @@ def rulegen(entities, options):
                         sid += 1
                     if kind == 'uri':
                         msg = kind.upper() + " detected | " + message
+                        msg += " | rev:" + str(rev)
                         uri = urllib3.util.parse_url(value)
                         dest = options.dest
                         host = uri.host
@@ -209,6 +212,7 @@ def rulegen(entities, options):
                             sid += 1
                     if kind == 'domain':
                         msg = kind.upper() + " detected | " + message
+                        msg += " | rev:" + str(rev)
                         domainparts = value.split('.')
                         content = ''
                         for part in domainparts:
@@ -243,6 +247,7 @@ def rulegen(entities, options):
                         sid += 1
                     if kind == 'email' or kind == 'email-subject':
                         msg = kind.upper() + " detected | " + message
+                        msg += " | rev:" + str(rev)
                         value = ' '.join("{:02x}".format(ord(c))
                                          for c in value)
                         ruleset.append('alert tcp $HOME_NET any <> ' +
@@ -283,6 +288,7 @@ def rulegen(entities, options):
                         sid += 1
                     if kind == 'snort':
                         msg = kind.upper() + " detected | " + message
+                        msg += " | rev:" + str(rev)
                         ruleset.append(value)
     finalruleset = []
     sidmap = {}

@@ -306,16 +306,17 @@ def rulegen(entities, options):
         # Check if a rule already exists in the sidmap file
         if rulehexdigest in sidmap:
             existingsid, existingrev = sidmap[rulehexdigest]
-            newsidmap[rulehexdigest] = (existingsid, existingrev)
-            # Check if the revision number of the existing rule is older
-            # than right now. If the existing rule in the sidmap is newer,
-            # something must be wrong; don't do anything and drop the
-            # rule from the final rule list.
-            if int(existingrev) <= int(rev):
-                # The existing rule is older, so reuse the older SID from
-                # the sidmap file
-                rule = sidfind.sub('sid:' + str(existingsid) + '; ', line)
-                finalruleset.append(rule)
+            if not rulehexdigest in newsidmap:
+                newsidmap[rulehexdigest] = (existingsid, existingrev)
+                # Check if the revision number of the existing rule is older
+                # than right now. If the existing rule in the sidmap is newer,
+                # something must be wrong; don't do anything and drop the
+                # rule from the final rule list.
+                if int(existingrev) <= int(rev):
+                    # The existing rule is older, so reuse the older SID from
+                    # the sidmap file
+                    rule = sidfind.sub('sid:' + str(existingsid) + '; ', line)
+                    finalruleset.append(rule)
         else:
             newrules.append(line)
         # Start counting at the base sid from the options again

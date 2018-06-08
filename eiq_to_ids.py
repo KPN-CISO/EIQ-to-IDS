@@ -309,6 +309,7 @@ def rulegen(entities, options):
         rulehash = hashlib.sha256()
         rulehash.update(hashline.strip().encode('utf-8'))
         rulehexdigest = rulehash.hexdigest()
+        usedsids = []
         # Check if a rule already exists in the sidmap file
         if rulehexdigest in sidmap:
             existingsid, existingrev = sidmap[rulehexdigest]
@@ -323,11 +324,11 @@ def rulegen(entities, options):
                     # the sidmap file
                     rule = sidfind.sub('sid:' + str(existingsid) + '; ', line)
                     finalruleset.append(rule)
+                    usedsids.append(existingsid)
         else:
             newrules.append(line)
         # Start counting at the base sid from the options again
         newsid = int(options.sid)
-        usedsids = []
         # Now build a list of the SIDs that are in use in the new sidmap
         for rulehexdigest in newsidmap:
             existingsid, existingrev = newsidmap[rulehexdigest]

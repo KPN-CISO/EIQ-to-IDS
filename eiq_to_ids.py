@@ -71,14 +71,16 @@ def transform(feedJSON, feedID, options):
                         'yara': []
                     }}
                     for extract in entity['extracts']:
+                        if 'kind' and 'value' in extract:
+                            kind, value = extract['kind'], extract['value']
+                            if kind == 'actor-id':
+                                entry[title][kind].append(value)
                         if 'instance_meta' in extract:
                             instance_meta = extract['instance_meta']
                             if 'link_types' in instance_meta:
                                 link_types = instance_meta['link_types']
                                 if 'test-mechanism' in link_types:
                                     classification = ''
-                                    if 'kind' and 'value' in extract:
-                                        kind, value = extract['kind'], extract['value']
                                     if 'meta' in extract:
                                         meta = extract['meta']
                                         if 'classification' in meta:
@@ -116,6 +118,7 @@ def rulegen(entities, options):
                 actor = entity[title]['actor-id']
                 if not actor:
                     actor = ['unknown']
+                actor = actor[0]
                 tlp = entity[title]['tlp']
                 description = cleanup(options.name + " | " +
                                       title)

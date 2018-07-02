@@ -7,6 +7,7 @@
 # This software is GPLv3 licensed, except where otherwise indicated
 
 import sys
+import os
 import json
 import xml
 import re
@@ -84,7 +85,8 @@ def transform(feedJSON, feedID, options):
                                     if 'meta' in extract:
                                         meta = extract['meta']
                                         if 'classification' in meta:
-                                            classification = meta['classification']
+                                            classification = meta[
+                                                             'classification']
                                     if classification == 'bad' or \
                                        kind == 'snort' or \
                                        kind == 'yara':
@@ -181,7 +183,7 @@ def rulegen(entities, options):
                         # Remove variables in GET request to prevent
                         # overly long content checks, and strip out the
                         # http[s] part
-                        value = re.sub(r'https?:\/\/','',value)
+                        value = re.sub(r'https?:\/\/', '', value)
                         if '?' in value:
                             value = value.split('?')[0]
                         # Check if the URI contains UTF/high-ASCII stuff
@@ -293,79 +295,77 @@ def rulegen(entities, options):
                         msg = kind.upper() + " detected | " + message
                         msg += " | rev:" + str(rev)
                         ruleset.append(value)
-    finalruleset = []
-    sidmap = {}
-    newsidmap = {}
-    newrules = []
-    sidfind = re.compile(r'sid:\d+; ')
-    revfind = re.compile(r' rev:\d+')
-    msgfind = re.compile(r'msg:\"[^\"]+\"; ')
-    try:
-        with open(settings.SIDFILE, 'rb') as sidfile:
-            sidmap = pickle.load(sidfile)
-    except IOError:
-        pass
-    for line in ruleset:
-        hashline = sidfind.sub('', line)
-        hashline = revfind.sub('', hashline)
-        hashline = msgfind.sub('', hashline)
-        rulehash = hashlib.sha256()
-        rulehash.update(hashline.strip().encode('utf-8'))
-        rulehexdigest = rulehash.hexdigest()
-        usedsids = []
-        # Check if a rule already exists in the sidmap file
-        if rulehexdigest in sidmap:
-            existingsid, existingrev = sidmap[rulehexdigest]
-            if not rulehexdigest in newsidmap:
-                newsidmap[rulehexdigest] = (existingsid, existingrev)
-                # Check if the revision number of the existing rule is older
-                # than right now. If the existing rule in the sidmap is newer,
-                # something must be wrong; don't do anything and drop the
-                # rule from the final rule list.
-                if int(existingrev) <= int(rev):
-                    # The existing rule is older, so reuse the older SID from
-                    # the sidmap file
-                    rule = sidfind.sub('sid:' + str(existingsid) + '; ', line)
-                    finalruleset.append(rule)
-                    usedsids.append(existingsid)
-        else:
-            newrules.append(line)
-        # Start counting at the base sid from the options again
-        newsid = int(options.sid)
-        # Now build a list of the SIDs that are in use in the new sidmap
-        for rulehexdigest in newsidmap:
-            existingsid, existingrev = newsidmap[rulehexdigest]
-            usedsids.append(existingsid)
-        # Since the remainder of the ruleset is rules that did not
-        # previously exist, add them to the final ruleset, while at the
-        # same time reusing the stale SIDs
-        for line in newrules:
-            hashline = sidfind.sub('', line)
-            hashline = revfind.sub('', hashline)
-            hashline = msgfind.sub('', hashline)
-            rulehash = hashlib.sha256()
-            rulehash.update(hashline.strip().encode('utf-8'))
-            rulehexdigest = rulehash.hexdigest()
-            while line not in finalruleset:
-                # As long as the new rule is not in the final ruleset,
-                # try to find a SID for it that is free
-                if not newsid in usedsids:
-                    rule = sidfind.sub('sid:' + str(newsid) + '; ', line)
-                    newsidmap[rulehexdigest] = (newsid, rev)
-                    finalruleset.append(line)
-                newsid += 1
-    if not options.simulate:
-        try:
-            with open(settings.SIDFILE, 'wb') as sidfile:
-                pickle.dump(newsidmap, sidfile, pickle.HIGHEST_PROTOCOL)
-        except:
-            if options.verbose:
-                print("An error occurred writing the sidmap to disk!")
-                raise
     if options.verbose:
         print("U) Ruleset is: ")
-        print(("\n".join(finalruleset)))
-    return finalruleset
+        print(("\n".join(ruleset)))
+    return ruleset
+
+
+def reusesid(ruleset, options):
+    sidfind = re.compile(r'sid:\d+; ')
+    gidfind = re.compile(r'gid:\d+; ')
+    revfind = re.compile(r' rev:\d+')
+    msgfind = re.compile(r'msg:\"[^\"]+\"; ')
+    priofind = re.compile(r'priority:\d+; ')
+    classfind = re.compile(r'classtype:[^\"]+;')
+    spacefix = re.compile(r' \)')
+    if ruleset:
+        existinglines = {}
+        if os.path.isfile(settings.SIDFILE):
+            try:
+                with open(settings.SIDFILE, 'rb') as sidfile:
+                    existinglines = pickle.load(sidfile)
+            except (IOError, EOFError):
+                if options.verbose:
+                    print("An error occurred loading the sidmap from disk!")
+                    raise
+        startsid = int(settings.SID)
+        newsidmap = {}
+        usedsids = {}
+        filteredruleset = {}
+        intermediateruleset = {}
+        finalruleset = []
+        for line in ruleset:
+            hashline = sidfind.sub('', line)
+            hashline = gidfind.sub('', hashline)
+            hashline = revfind.sub('', hashline)
+            hashline = msgfind.sub('', hashline)
+            hashline = priofind.sub('', hashline)
+            hashline = classfind.sub('', hashline)
+            hashline = spacefix.sub(')', hashline)
+            sid = re.findall(sidfind, line)[0]
+            filteredruleset[hashline] = (line, sid)
+        for hashline in filteredruleset:
+            if hashline in existinglines:
+                line = existinglines[hashline][0]
+                sid = existinglines[hashline][1]
+                finalruleset.append(line)
+                newsidmap[hashline] = (line, sid)
+                usedsids[sid] = line
+            else:
+                line = filteredruleset[hashline][0]
+                sid = filteredruleset[hashline][1]
+                intermediateruleset[sid] = (line, hashline)
+        for sid in intermediateruleset:
+            while startsid in usedsids:
+                startsid += 1
+            line = sidfind.sub('sid:' + str(startsid) + '; ',
+                               intermediateruleset[sid][0])
+            newsidmap[intermediateruleset[sid][1]] = (line, sid)
+            finalruleset.append(line)
+            usedsids[startsid] = line
+        if not options.simulate:
+            try:
+                with open(settings.SIDFILE, 'wb') as sidfile:
+                    pickle.dump(newsidmap, sidfile, pickle.HIGHEST_PROTOCOL)
+            except:
+                if options.verbose:
+                    print("An error occurred writing the sidmap to disk!")
+                    raise
+        else:
+            if options.verbose:
+                "Not writing the sidmap to disk because of the simulate option!"
+        return finalruleset
 
 
 def download(feedID, options):
@@ -571,5 +571,6 @@ if __name__ == "__main__":
         feedDict = download(feedID, options)
         entities = transform(feedDict, feedID, options)
         ruleset = rulegen(entities, options)
-        if ruleset:
-            process(ruleset, options)
+        filteredruleset = reusesid(ruleset, options)
+        if filteredruleset:
+            process(filteredruleset, options)

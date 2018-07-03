@@ -342,18 +342,24 @@ def reusesid(ruleset, options):
                 finalruleset.append(line)
                 newsidmap[hashline] = (line, sid)
                 usedsids[sid] = line
+                if options.verbose:
+                    print("Reused " + sid + "for line: " + line)
             else:
                 line = filteredruleset[hashline][0]
                 sid = filteredruleset[hashline][1]
                 intermediateruleset[sid] = (line, hashline)
         for sid in intermediateruleset:
-            while startsid in usedsids:
+            testsid = 'sid:' + str(startsid) + '; '
+            while testsid in usedsids:
                 startsid += 1
+                testsid = 'sid:' + str(startsid) + '; '
             line = sidfind.sub('sid:' + str(startsid) + '; ',
                                intermediateruleset[sid][0])
             newsidmap[intermediateruleset[sid][1]] = (line, sid)
             finalruleset.append(line)
-            usedsids[startsid] = line
+            if options.verbose:
+                print("Used " + testsid + "for line: " + line)
+            usedsids[testsid] = line
         if not options.simulate:
             try:
                 with open(settings.SIDFILE, 'wb') as sidfile:

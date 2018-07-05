@@ -375,10 +375,12 @@ def reusesid(ruleset, options):
                 '''
                 while replacementsid in usedsids:
                     replacementsid += 1
-                newrule = sidfind.sub("sid:" + replacementsid + "; ", newrule)
+                newrule = sidfind.sub("sid:" + str(replacementsid) + "; ", 
+                                      newrule)
                 usedsids.add(replacementsid)
                 newruleset.append(newrule)
-                oldrulemap[rule] = (newrule, replacementsid)
+                oldrulemap[rule] = (newrule, "sid:" + str(replacementsid) +
+                                    "; ")
             else:
                 usedsids.add(newsid)
                 newruleset.append(newrule)

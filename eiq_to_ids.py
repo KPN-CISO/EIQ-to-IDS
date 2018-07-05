@@ -30,6 +30,14 @@ from email.utils import formatdate, make_msgid
 
 from config import settings
 
+sidfind = re.compile(r'sid:\d+; ')
+gidfind = re.compile(r'gid:\d+; ')
+revfind = re.compile(r' rev:\d+')
+msgfind = re.compile(r'msg:\"[^\"]+\"; ')
+priofind = re.compile(r'priority:\d+; ')
+classfind = re.compile(r'classtype:[^\"]+;')
+spacefix = re.compile(r' \)')
+
 
 def transform(feedJSON, feedID, options):
     '''
@@ -301,77 +309,102 @@ def rulegen(entities, options):
     return ruleset
 
 
+def striprule(rule):
+    strippedrule = sidfind.sub('', rule)
+    strippedrule = gidfind.sub('', strippedrule)
+    strippedrule = revfind.sub('', strippedrule)
+    strippedrule = msgfind.sub('', strippedrule)
+    strippedrule = priofind.sub('', strippedrule)
+    strippedrule = classfind.sub('', strippedrule)
+    strippedrule = spacefix.sub(')', strippedrule)
+    return strippedrule
+
+
 def reusesid(ruleset, options):
-    sidfind = re.compile(r'sid:\d+; ')
-    gidfind = re.compile(r'gid:\d+; ')
-    revfind = re.compile(r' rev:\d+')
-    msgfind = re.compile(r'msg:\"[^\"]+\"; ')
-    priofind = re.compile(r'priority:\d+; ')
-    classfind = re.compile(r'classtype:[^\"]+;')
-    spacefix = re.compile(r' \)')
     if ruleset:
-        existinglines = {}
+        newrulemap = {}
+        oldrulemap = {}
+        newruleset = []
+        usedsids = set()
+        '''
+        First, create a deduplicated dictionary of the new rules in the format:
+        strippedrule:(completerule, sid)
+        '''
+        for rule in ruleset:
+            newrulemap[striprule(rule)] = (rule, sidfind.findall(rule)[0])
+        '''
+        Then, load the old sid map from disk (same format), if it exists...
+        '''
         if os.path.isfile(settings.SIDFILE):
             try:
                 with open(settings.SIDFILE, 'rb') as sidfile:
-                    existinglines = pickle.load(sidfile)
+                    oldrulemap = pickle.load(sidfile)
+                    for rule in oldrulemap:
+                        oldsid = oldrulemap[rule][1]
+                        usedsids.add(oldsid)
             except (IOError, EOFError):
                 if options.verbose:
                     print("An error occurred loading the sidmap from disk!")
                     raise
-        startsid = int(settings.SID)
-        newsidmap = {}
-        usedsids = {}
-        filteredruleset = {}
-        intermediateruleset = {}
-        finalruleset = []
-        for line in ruleset:
-            hashline = sidfind.sub('', line)
-            hashline = gidfind.sub('', hashline)
-            hashline = revfind.sub('', hashline)
-            hashline = msgfind.sub('', hashline)
-            hashline = priofind.sub('', hashline)
-            hashline = classfind.sub('', hashline)
-            hashline = spacefix.sub(')', hashline)
-            sid = re.findall(sidfind, line)[0]
-            filteredruleset[hashline] = (line, sid)
-        for hashline in filteredruleset:
-            if hashline in existinglines:
-                line = existinglines[hashline][0]
-                sid = existinglines[hashline][1]
-                finalruleset.append(line)
-                newsidmap[hashline] = (line, sid)
-                usedsids[sid] = line
-                if options.verbose:
-                    print("Reused " + sid + "for line: " + line)
+        '''
+        For every new rule, check if it already existed in the old set. If so,
+        reuse the old sid. Then, push the new rule into the final ruleset, the
+        new sid map, reserve the sid and then delete the rule from the new rule
+        map.
+        '''
+        for rule in list(newrulemap.keys()):
+            newrule = newrulemap[rule][0]
+            newsid = newrulemap[rule][1]
+            if newrule in oldrulemap:
+                oldrule = oldrulemap[rule][0]
+                oldsid = oldrulemap[rule][1]
+                newrule = sidfind.sub(oldsid, newrule)
+                newruleset.append(newrule)
+                del newrulemap[rule]
+        '''
+        Check if the remaining rules do not use existing sids and replace them
+        with a new 'free' sid if so.
+        '''
+        for rule in newrulemap:
+            newrule = newrulemap[rule][0]
+            newsid = newrulemap[rule][1]
+            if newsid in usedsids:
+                replacementsid = options.sid
+                '''
+                Find a new free sid for replacing the old one
+                '''
+                while replacementsid in usedsids:
+                    replacementsid += 1
+                newrule = sidfind.sub("sid:" + replacementsid + "; ", newrule)
+                usedsids.add(replacementsid)
+                newruleset.append(newrule)
+                oldrulemap[rule] = (newrule, replacementsid)
             else:
-                line = filteredruleset[hashline][0]
-                sid = filteredruleset[hashline][1]
-                intermediateruleset[sid] = (line, hashline)
-        for sid in intermediateruleset:
-            testsid = 'sid:' + str(startsid) + '; '
-            while testsid in usedsids:
-                startsid += 1
-                testsid = 'sid:' + str(startsid) + '; '
-            line = sidfind.sub('sid:' + str(startsid) + '; ',
-                               intermediateruleset[sid][0])
-            newsidmap[intermediateruleset[sid][1]] = (line, sid)
-            finalruleset.append(line)
-            if options.verbose:
-                print("Used " + testsid + "for line: " + line)
-            usedsids[testsid] = line
+                usedsids.add(newsid)
+                newruleset.append(newrule)
+                oldrulemap[rule] = (newrule, newsid)
+        '''
+        Finally, build the new sid map by combining the old and the new map,
+        and store it on disk.
+        '''
+        newrulemap.update(oldrulemap)
+        if options.verbose:
+            print("---")
+            print("New map of rules and corresponding sids for writing to disk:")
+            for key, value in list(newrulemap.items()):
+                print('Key: {} *** Value: {}'.format(key, value))
         if not options.simulate:
             try:
                 with open(settings.SIDFILE, 'wb') as sidfile:
-                    pickle.dump(newsidmap, sidfile, pickle.HIGHEST_PROTOCOL)
+                    pickle.dump(newrulemap, sidfile, pickle.HIGHEST_PROTOCOL)
             except:
                 if options.verbose:
                     print("An error occurred writing the sidmap to disk!")
                     raise
         else:
             if options.verbose:
-                "Not writing the sidmap to disk because of the simulate option!"
-        return finalruleset
+                "Not writing sidmap to disk because of the simulate option!"
+        return newruleset
 
 
 def download(feedID, options):

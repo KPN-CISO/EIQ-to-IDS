@@ -392,7 +392,7 @@ def reusesid(ruleset, options):
         newrulemap.update(oldrulemap)
         if options.verbose:
             print("---")
-            print("New map of rules and corresponding sids for writing to disk:")
+            print("New map of rules and sids for writing to disk:")
             for key, value in list(newrulemap.items()):
                 print('Key: {} *** Value: {}'.format(key, value))
         if not options.simulate:

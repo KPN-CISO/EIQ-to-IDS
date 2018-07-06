@@ -339,8 +339,15 @@ def reusesid(ruleset, options):
             try:
                 with open(settings.SIDFILE, 'rb') as sidfile:
                     oldrulemap = pickle.load(sidfile)
+                    if options.verbose:
+                        print("---")
+                        print("Old ruleset and existing sids:")
+                        print("---")
                     for rule in oldrulemap:
+                        oldrule = oldrulemap[rule][0]
                         oldsid = oldrulemap[rule][1]
+                        if options.verbose:
+                            print('Key: {} *** Value: {}'.format(rule, oldrule))
                         usedsids.add(oldsid)
             except (IOError, EOFError):
                 if options.verbose:
@@ -352,14 +359,19 @@ def reusesid(ruleset, options):
         new sid map, reserve the sid and then delete the rule from the new rule
         map.
         '''
+        if options.verbose:
+            print("---")
+            print("List of", len(usedsids), "historical sids:",
+                  sorted(usedsids))
+            print("---")
         for rule in list(newrulemap.keys()):
             newrule = newrulemap[rule][0]
             newsid = newrulemap[rule][1]
-            if newrule in oldrulemap:
+            if rule in oldrulemap:
                 oldrule = oldrulemap[rule][0]
                 oldsid = oldrulemap[rule][1]
                 newrule = sidfind.sub(oldsid, newrule)
-                newruleset.append(newrule)
+                newruleset.append(oldrule)
                 del newrulemap[rule]
         '''
         Check if the remaining rules do not use existing sids and replace them
@@ -369,18 +381,18 @@ def reusesid(ruleset, options):
             newrule = newrulemap[rule][0]
             newsid = newrulemap[rule][1]
             if newsid in usedsids:
-                replacementsid = options.sid
+                counter = options.sid
+                replacementsid = "sid:" + str(counter) + "; "
                 '''
                 Find a new free sid for replacing the old one
                 '''
                 while replacementsid in usedsids:
-                    replacementsid += 1
-                newrule = sidfind.sub("sid:" + str(replacementsid) + "; ", 
-                                      newrule)
+                    counter += 1
+                    replacementsid = "sid:" + str(counter) + "; "
+                newrule = sidfind.sub(replacementsid, newrule)
                 usedsids.add(replacementsid)
                 newruleset.append(newrule)
-                oldrulemap[rule] = (newrule, "sid:" + str(replacementsid) +
-                                    "; ")
+                oldrulemap[rule] = (newrule, replacementsid)
             else:
                 usedsids.add(newsid)
                 newruleset.append(newrule)
@@ -393,6 +405,7 @@ def reusesid(ruleset, options):
         if options.verbose:
             print("---")
             print("New map of rules and sids for writing to disk:")
+            print("---")
             for key, value in list(newrulemap.items()):
                 print('Key: {} *** Value: {}'.format(key, value))
         if not options.simulate:
@@ -406,6 +419,12 @@ def reusesid(ruleset, options):
         else:
             if options.verbose:
                 "Not writing sidmap to disk because of the simulate option!"
+        if options.verbose:
+            print("---")
+            print("New ruleset:")
+            print("---")
+            for rule in newruleset:
+                print(rule)
         return newruleset
 
 

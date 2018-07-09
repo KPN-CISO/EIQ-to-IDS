@@ -370,7 +370,8 @@ def reusesid(ruleset, options):
             if rule in oldrulemap:
                 oldrule = oldrulemap[rule][0]
                 oldsid = oldrulemap[rule][1]
-                newrule = sidfind.sub(oldsid, newrule)
+                newrev = revfind.findall(newrule)[0]
+                oldrule = revfind.sub(newrev, oldrule)
                 newruleset.append(oldrule)
                 del newrulemap[rule]
         '''

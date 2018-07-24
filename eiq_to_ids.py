@@ -154,22 +154,22 @@ def rulegen(entities, options):
                                        '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
-                    if kind == 'file':
-                        msg = kind.upper() + " detected | " + message
-                        msg += " | rev:" + str(rev)
-                        value = ' '.join("{:02x}".format(ord(c))
-                                         for c in value)
-                        ruleset.append('alert tcp $HOME_NET any -> ' +
-                                       options.dest + ' any ' +
-                                       '(msg:"' + msg + '"; ' +
-                                       'content:"|' + value + '|"; ' +
-                                       'priority:' + str(priority) + '; ' +
-                                       'sid:' + str(sid) + '; ' +
-                                       'gid:' + str(gid) + '; ' +
-                                       'classtype:' + options.classtype +
-                                       '; ' + 'rev:' + str(rev) +
-                                       ')')
-                        sid += 1
+#                    if kind == 'file':
+#                        msg = kind.upper() + " detected | " + message
+#                        msg += " | rev:" + str(rev)
+#                        value = ' '.join("{:02x}".format(ord(c))
+#                                         for c in value)
+#                        ruleset.append('alert tcp $HOME_NET any -> ' +
+#                                       options.dest + ' any ' +
+#                                       '(msg:"' + msg + '"; ' +
+#                                       'content:"|' + value + '|"; ' +
+#                                       'priority:' + str(priority) + '; ' +
+#                                       'sid:' + str(sid) + '; ' +
+#                                       'gid:' + str(gid) + '; ' +
+#                                       'classtype:' + options.classtype +
+#                                       '; ' + 'rev:' + str(rev) +
+#                                       ')')
+#                        sid += 1
                     if kind == 'uri':
                         msg = kind.upper() + " detected | " + message
                         msg += " | rev:" + str(rev)

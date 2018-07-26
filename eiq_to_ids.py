@@ -300,7 +300,15 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'snort':
+                        msg = msgfind.findall(value)[0].replace('msg:', '')
+                        msg = msg.replace('"', '')
+                        msg = msg.replace('; ', '')
+                        msg += ' | rev:' + str(rev)
                         value = striprule(value)
+                        value = value.replace('(',
+                                              '(msg:"Snort rule from ' +
+                                              'third-party intel: ' + msg +
+                                              '"; ')
                         value = value.replace(')',
                                               ' priority:' + str(priority) +
                                               '; ' +
@@ -310,8 +318,8 @@ def rulegen(entities, options):
                                               options.classtype +
                                               '; ' + 'rev:' + str(rev) +
                                               ')')
-                        print(value)
                         sid += 1
+                        ruleset.append(value)
     if options.verbose:
         print("U) Ruleset is: ")
         print(("\n".join(ruleset)))

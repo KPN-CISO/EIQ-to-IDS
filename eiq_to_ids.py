@@ -191,9 +191,9 @@ def rulegen(entities, options):
                         # Remove variables in GET request to prevent
                         # overly long content checks, and strip out the
                         # http[s] part
-                        value = re.sub(r'https?:\/\/', '', value)
-                        if '?' in value:
-                            value = value.split('?')[0]
+                        # value = re.sub(r'https?:\/\/', '', value)
+                        # if '?' in value:
+                        #    value = value.split('?')[0]
                         # Check if the URI contains UTF/high-ASCII stuff
                         # that might break SourceFire/Snort parsing
                         newvalue = unicodedata.normalize('NFKD', value)
@@ -300,9 +300,18 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'snort':
-                        msg = kind.upper() + " detected | " + message
-                        msg += " | rev:" + str(rev)
-                        ruleset.append(value)
+                        value = striprule(value)
+                        value = value.replace(')',
+                                              ' priority:' + str(priority) +
+                                              '; ' +
+                                              'sid:' + str(sid) + '; ' +
+                                              'gid:' + str(gid) + '; ' +
+                                              'classtype:' +
+                                              options.classtype +
+                                              '; ' + 'rev:' + str(rev) +
+                                              ')')
+                        print(value)
+                        sid += 1
     if options.verbose:
         print("U) Ruleset is: ")
         print(("\n".join(ruleset)))
@@ -347,7 +356,8 @@ def reusesid(ruleset, options):
                         oldrule = oldrulemap[rule][0]
                         oldsid = oldrulemap[rule][1]
                         if options.verbose:
-                            print('Key: {} *** Value: {}'.format(rule, oldrule))
+                            print('Key: {} *** Value: {}'.format(rule,
+                                                                 oldrule))
                         usedsids.add(oldsid)
             except (IOError, EOFError):
                 if options.verbose:

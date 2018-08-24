@@ -308,16 +308,15 @@ def rulegen(entities, options):
                         value = value.replace('(',
                                               '(msg:"Snort rule from ' +
                                               'third-party intel: ' + msg +
-                                              '"; ')
-                        value = value.replace(')',
-                                              ' priority:' + str(priority) +
-                                              '; ' +
-                                              'sid:' + str(sid) + '; ' +
-                                              'gid:' + str(gid) + '; ' +
-                                              'classtype:' +
-                                              options.classtype +
-                                              '; ' + 'rev:' + str(rev) +
-                                              ')')
+                                              '"; ', 1)
+                        revstring = ' priority:' + str(priority) + '; '
+                        revstring += 'sid:' + str(sid) + '; '
+                        revstring += 'gid:' + str(gid) + '; '
+                        revstring += 'classtype:'
+                        revstring += options.classtype
+                        revstring += '; ' + 'rev:' + str(rev) + ')'
+                        revstring = revstring[::-1]
+                        value = value[::-1].replace(')', revstring, 1)[::-1]
                         sid += 1
                         ruleset.append(value)
     if options.verbose:

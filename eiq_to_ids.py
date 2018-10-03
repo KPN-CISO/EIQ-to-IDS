@@ -320,7 +320,6 @@ def rulegen(entities, options):
                             value = value[::-1].replace(')',
                                                         revstring, 1)[::-1]
                             sid += 1
-                            print(value)
                             ruleset.append(value)
     if options.verbose:
         print("U) Ruleset is: ")

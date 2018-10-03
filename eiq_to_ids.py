@@ -300,17 +300,16 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'snort':
-                        msg = msgfind.findall(value)
+                        msg = msgfind.findall(value)[0]
+                        sublist = ['\"', ';', '\'', '\(', '\)']
+                        msg = re.sub("|".join(sublist), "", msg)
+                        msg += '| rev:' + str(rev)
+                        msg = msg.replace('msg:',
+                                          'msg:"Snort rule from ' +
+                                          'third-party intel: ') + '";'
                         if msg:
-                            msg = msg[0].replace('msg:', '')
-                            msg = msg.replace('"', '')
-                            msg = msg.replace('; ', '')
-                            msg += ' | rev:' + str(rev)
                             value = striprule(value)
-                            value = value.replace('(',
-                                                  '(msg:"Snort rule from ' +
-                                                  'third-party intel: ' + msg +
-                                                  '"; ', 1)
+                            value = re.sub(r'msg:\".*\";;', msg, value)
                             revstring = ' priority:' + str(priority) + '; '
                             revstring += 'sid:' + str(sid) + '; '
                             revstring += 'gid:' + str(gid) + '; '
@@ -318,8 +317,10 @@ def rulegen(entities, options):
                             revstring += options.classtype
                             revstring += '; ' + 'rev:' + str(rev) + ')'
                             revstring = revstring[::-1]
-                            value = value[::-1].replace(')', revstring, 1)[::-1]
+                            value = value[::-1].replace(')',
+                                                        revstring, 1)[::-1]
                             sid += 1
+                            print(value)
                             ruleset.append(value)
     if options.verbose:
         print("U) Ruleset is: ")

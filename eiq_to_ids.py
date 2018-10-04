@@ -33,7 +33,7 @@ from config import settings
 sidfind = re.compile(r'sid:\d+; ')
 gidfind = re.compile(r'gid:\d+; ')
 revfind = re.compile(r' rev:\d+')
-msgfind = re.compile(r'msg:\ ?\"[^\"]+\"; ')
+msgfind = re.compile(r'msg:[:]?\ ?\"[^\"]+\"; ')
 priofind = re.compile(r'priority:\d+; ')
 classfind = re.compile(r'classtype:[^\"]+;')
 spacefix = re.compile(r' \)')
@@ -301,26 +301,26 @@ def rulegen(entities, options):
                         sid += 1
                     if kind == 'snort':
                         msg = msgfind.findall(value)[0]
-                        sublist = ['\"', ';', '\'', '\(', '\)']
-                        msg = re.sub("|".join(sublist), "", msg)
+                        sublist = ['\"', ';', '\'', '(', ')']
+                        for char in sublist:
+                            msg = msg.replace(char, "")
                         msg += '| rev:' + str(rev)
                         msg = msg.replace('msg:',
                                           'msg:"Snort rule from ' +
                                           'third-party intel: ') + '";'
-                        if msg:
-                            value = striprule(value)
-                            value = re.sub(r'msg:\".*\";;', msg, value)
-                            revstring = ' priority:' + str(priority) + '; '
-                            revstring += 'sid:' + str(sid) + '; '
-                            revstring += 'gid:' + str(gid) + '; '
-                            revstring += 'classtype:'
-                            revstring += options.classtype
-                            revstring += '; ' + 'rev:' + str(rev) + ')'
-                            revstring = revstring[::-1]
-                            value = value[::-1].replace(')',
-                                                        revstring, 1)[::-1]
-                            sid += 1
-                            ruleset.append(value)
+                        value = striprule(value)
+                        value = re.sub(r'msg:\".*\";;', msg, value)
+                        revstring = ' priority:' + str(priority) + '; '
+                        revstring += 'sid:' + str(sid) + '; '
+                        revstring += 'gid:' + str(gid) + '; '
+                        revstring += 'classtype:'
+                        revstring += options.classtype
+                        revstring += '; ' + 'rev:' + str(rev) + ')'
+                        revstring = revstring[::-1]
+                        value = value[::-1].replace(')',
+                                                    revstring, 1)[::-1]
+                        sid += 1
+                        ruleset.append(value)
     if options.verbose:
         print("U) Ruleset is: ")
         print(("\n".join(ruleset)))
@@ -349,7 +349,9 @@ def reusesid(ruleset, options):
         strippedrule:(completerule, sid)
         '''
         for rule in ruleset:
-            newrulemap[striprule(rule)] = (rule, sidfind.findall(rule)[0])
+            sid = sidfind.findall(rule)
+            if sid:
+                newrulemap[striprule(rule)] = (rule, sid[0])
         '''
         Then, load the old sid map from disk (same format), if it exists...
         '''

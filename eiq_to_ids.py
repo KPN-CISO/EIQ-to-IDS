@@ -30,10 +30,12 @@ from email.utils import formatdate, make_msgid
 
 from config import settings
 
-sidfind = re.compile(r'sid:\d+; ')
+sidfind = re.compile(r'sid:\d+; ?')
 gidfind = re.compile(r'gid:\d+; ')
 revfind = re.compile(r' rev:\d+')
-msgfind = re.compile(r'msg:[:]?\ ?\"[^\"]+\"; ')
+httpfind = re.compile(r'metadata:service http; ')
+stripnl = re.compile(r's/\r\n/ /g')
+msgfind = re.compile(r'msg:[:]?\ ?\"[^\"]+\";?; ')
 priofind = re.compile(r'priority:\d+; ')
 classfind = re.compile(r'classtype:[^\"]+;')
 spacefix = re.compile(r' \)')
@@ -219,6 +221,7 @@ def rulegen(entities, options):
                                            'priority:' + str(priority) + '; ' +
                                            'sid:' + str(sid) + '; ' +
                                            'gid:' + str(gid) + '; ' +
+                                           'metadata:service http; ' +
                                            'classtype:' + options.classtype +
                                            '; ' + 'rev:' + str(rev) +
                                            ')')
@@ -300,16 +303,25 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'snort':
+                        value = re.sub(r'\r\n', ' ', value)
+                        value = re.sub(r';', '; ', value)
+                        value = re.sub(r';  ', '; ', value)
+                        value = re.sub(r'; \)', ';)', value)
+                        value = sidfind.sub('', value)
+                        value = gidfind.sub('', value)
+                        value = revfind.sub('', value)
+                        value = httpfind.sub('', value)
+                        value = priofind.sub('', value)
+                        value = classfind.sub('', value)
+                        value = spacefix.sub(')', value)
                         msg = msgfind.findall(value)[0]
                         sublist = ['\"', ';', '\'', '(', ')']
                         for char in sublist:
                             msg = msg.replace(char, "")
                         msg += '| rev:' + str(rev)
-                        msg = msg.replace('msg:',
-                                          'msg:"Snort rule from ' +
-                                          'third-party intel: ') + '";'
-                        value = striprule(value)
-                        value = re.sub(r'msg:\".*\";;', msg, value)
+                        value = re.sub(r'msg:[:]?\ ?\"[^\"]+\";?; ',
+                                       msg + '\"; ', value)
+                        value = value.replace('msg:', 'msg:"3rd-party intel: ', 1)
                         revstring = ' priority:' + str(priority) + '; '
                         revstring += 'sid:' + str(sid) + '; '
                         revstring += 'gid:' + str(gid) + '; '
@@ -331,6 +343,7 @@ def striprule(rule):
     strippedrule = sidfind.sub('', rule)
     strippedrule = gidfind.sub('', strippedrule)
     strippedrule = revfind.sub('', strippedrule)
+    strippedrule = httpfind.sub('', strippedrule)
     strippedrule = msgfind.sub('', strippedrule)
     strippedrule = priofind.sub('', strippedrule)
     strippedrule = classfind.sub('', strippedrule)

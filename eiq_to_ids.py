@@ -39,7 +39,8 @@ msgfind = re.compile(r'msg:[:]?\ ?\"[^\"]+\";?; ')
 priofind = re.compile(r'priority:\d+; ')
 classfind = re.compile(r'classtype:[^\"]+;')
 spacefix = re.compile(r' \)')
-
+semicolonfix = re.compile(r's/;;/;/g')
+doublespacefix = re.compile(r's/  / /g')
 
 def transform(feedJSON, feedID, options):
     '''
@@ -314,6 +315,8 @@ def rulegen(entities, options):
                         value = priofind.sub('', value)
                         value = classfind.sub('', value)
                         value = spacefix.sub(')', value)
+                        value = re.sub(r';;', ';', value)
+                        value = re.sub(r'  ', ' ', value)
                         msg = msgfind.findall(value)[0]
                         sublist = ['\"', ';', '\'', '(', ')']
                         for char in sublist:

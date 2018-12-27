@@ -133,11 +133,14 @@ def rulegen(entities, options):
                     actor = ['unknown']
                 actor = actor[0]
                 tlp = entity[title]['tlp']
-                description = cleanup(options.name + " | " +
-                                      title)
+                description = cleanup(title)
+                Event = "No MISP Event"
+                EventRE = re.search('Event [0-9]+', description)
+                if EventRE:
+                    Event = "MISP Event: " + EventRE.group(0)
                 message = "TLP:" + ''.join(tlp) + \
                           " | Actor: " + ''.join(actor) + \
-                          " | " + ''.join(description)
+                          " | " + ''.join(Event)
                 message = message.replace('"', '')
                 message = unicodedata.normalize('NFKD', message)
                 message = ''.join(filter(lambda x: x in string.printable,
@@ -145,7 +148,8 @@ def rulegen(entities, options):
             for kind in entity[title]:
                 for value in entity[title][kind]:
                     if kind == 'ipv4' or kind == 'ipv6':
-                        msg = kind.upper() + " detected | " + message
+                        msg = kind.upper() + " detected: " + value 
+                        msg += " | " + message
                         msg += " | rev:" + str(rev)
                         ruleset.append('alert ip $HOME_NET any <> ' +
                                        value + ' any ' +
@@ -174,7 +178,8 @@ def rulegen(entities, options):
 #                                       ')')
 #                        sid += 1
                     if kind == 'uri':
-                        msg = kind.upper() + " detected | " + message
+                        msg = kind.upper() + " detected: " + value 
+                        msg += " | " + message
                         msg += " | rev:" + str(rev)
                         uri = urllib3.util.parse_url(value)
                         dest = options.dest
@@ -228,7 +233,8 @@ def rulegen(entities, options):
                                            ')')
                             sid += 1
                     if kind == 'domain':
-                        msg = kind.upper() + " detected | " + message
+                        msg = kind.upper() + " detected: " + value 
+                        msg += " | " + message
                         msg += " | rev:" + str(rev)
                         domainparts = value.split('.')
                         content = ''
@@ -263,7 +269,8 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'email' or kind == 'email-subject':
-                        msg = kind.upper() + " detected | " + message
+                        msg = kind.upper() + " detected: " + value 
+                        msg += " | " + message
                         msg += " | rev:" + str(rev)
                         value = ' '.join("{:02x}".format(ord(c))
                                          for c in value)

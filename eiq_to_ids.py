@@ -134,10 +134,10 @@ def rulegen(entities, options):
                 actor = actor[0]
                 tlp = entity[title]['tlp']
                 description = cleanup(title)
-                Event = "No MISP Event"
+                Event = "Not in MISP"
                 EventRE = re.search('Event [0-9]+', description)
                 if EventRE:
-                    Event = "MISP Event: " + EventRE.group(0)
+                    Event = "MISP: " + EventRE.group(0)
                 message = "TLP:" + ''.join(tlp) + \
                           " | Actor: " + ''.join(actor) + \
                           " | " + ''.join(Event)

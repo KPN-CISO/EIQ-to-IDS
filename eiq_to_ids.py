@@ -42,6 +42,7 @@ spacefix = re.compile(r' \)')
 semicolonfix = re.compile(r's/;;/;/g')
 doublespacefix = re.compile(r's/  / /g')
 
+
 def transform(feedJSON, feedID, options):
     '''
     Take the EIQ JSON objects, extract all observables into lists,
@@ -148,7 +149,7 @@ def rulegen(entities, options):
             for kind in entity[title]:
                 for value in entity[title][kind]:
                     if kind == 'ipv4' or kind == 'ipv6':
-                        msg = kind.upper() + " detected: " + value 
+                        msg = kind.upper() + " detected: " + value
                         msg += " | " + message
                         msg += " | rev:" + str(rev)
                         ruleset.append('alert ip $HOME_NET any <> ' +
@@ -178,24 +179,29 @@ def rulegen(entities, options):
 #                                       ')')
 #                        sid += 1
                     if kind == 'uri':
-                        msg = kind.upper() + " detected: " + value 
+                        msg = kind.upper() + " detected: " + value
                         msg += " | " + message
                         msg += " | rev:" + str(rev)
                         uri = urllib3.util.parse_url(value)
                         dest = options.dest
                         host = uri.host
-                        port = str(uri.port)
+                        port = uri.port
                         # Check if we need to write SourceFire/Snort rules
                         # that need to compensate for proxy traffic
                         if settings.HTTP_PROXYSERVER:
-                            http_ports = str(settings.HTTP_PROXYSERVERPORT)
                             dest = settings.HTTP_PROXYSERVER
+                            if 'https://' in value:
+                                if uri.port:
+                                    value = host + ':' + str(port)
+                                else:
+                                    value = host + ':443'
+                            http_ports = str(settings.HTTP_PROXYSERVERPORT)
                         else:
-                            dest = [options.dest]
+                            dest = options.dest
                             if uri.port:
-                                http_ports = str(uri.port)
+                                http_ports = str(port)
                             else:
-                                http_ports = settings.HTTP_PORTS
+                                http_ports = str(settings.HTTP_PORTS)
                         # Remove variables in GET request to prevent
                         # overly long content checks, and strip out the
                         # http[s] part
@@ -215,25 +221,28 @@ def rulegen(entities, options):
                             content += value + '|"; '
                         else:
                             content += 'content:"' + value + '"; '
+                            if 'https://' in msg:
+                                content += 'http_header; '
+                            else:
+                                content += 'http_uri; '
                             content += 'fast_pattern:only; '
                             content += 'nocase; '
-                        for destination in dest:
-                            ruleset.append('alert tcp $HOME_NET any -> ' +
-                                           destination + ' ' +
-                                           http_ports + ' ' +
-                                           '(msg:"' + msg + '"; ' +
-                                           'flow:to_server,established; ' +
-                                           content +
-                                           'priority:' + str(priority) + '; ' +
-                                           'sid:' + str(sid) + '; ' +
-                                           'gid:' + str(gid) + '; ' +
-                                           'metadata:service http; ' +
-                                           'classtype:' + options.classtype +
-                                           '; ' + 'rev:' + str(rev) +
-                                           ')')
-                            sid += 1
+                        ruleset.append('alert tcp $HOME_NET any -> ' +
+                                       dest + ' ' +
+                                       http_ports + ' ' +
+                                       '(msg:"' + msg + '"; ' +
+                                       'flow:to_server,established; ' +
+                                       content +
+                                       'priority:' + str(priority) + '; ' +
+                                       'sid:' + str(sid) + '; ' +
+                                       'gid:' + str(gid) + '; ' +
+                                       'metadata:service http; ' +
+                                       'classtype:' + options.classtype +
+                                       '; rev:' + str(rev) +
+                                       ')')
+                        sid += 1
                     if kind == 'domain':
-                        msg = kind.upper() + " detected: " + value 
+                        msg = kind.upper() + " detected: " + value
                         msg += " | " + message
                         msg += " | rev:" + str(rev)
                         domainparts = value.split('.')
@@ -269,7 +278,7 @@ def rulegen(entities, options):
                                        ')')
                         sid += 1
                     if kind == 'email' or kind == 'email-subject':
-                        msg = kind.upper() + " detected: " + value 
+                        msg = kind.upper() + " detected: " + value
                         msg += " | " + message
                         msg += " | rev:" + str(rev)
                         value = ' '.join("{:02x}".format(ord(c))
@@ -331,7 +340,8 @@ def rulegen(entities, options):
                         msg += '| rev:' + str(rev)
                         value = re.sub(r'msg:[:]?\ ?\"[^\"]+\";?; ',
                                        msg + '\"; ', value)
-                        value = value.replace('msg:', 'msg:"3rd-party intel: ', 1)
+                        value = value.replace('msg:',
+                                              'msg:"3rd-party intel: ', 1)
                         revstring = ' priority:' + str(priority) + '; '
                         revstring += 'sid:' + str(sid) + '; '
                         revstring += 'gid:' + str(gid) + '; '

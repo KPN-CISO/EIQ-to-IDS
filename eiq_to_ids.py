@@ -139,6 +139,8 @@ def rulegen(entities, options):
                 EventRE = re.search('Event [0-9]+', description)
                 if EventRE:
                     Event = "MISP: " + EventRE.group(0)
+                else:
+                    Event += ": " + description
                 message = "TLP:" + ''.join(tlp) + \
                           " | Actor: " + ''.join(actor) + \
                           " | " + ''.join(Event)

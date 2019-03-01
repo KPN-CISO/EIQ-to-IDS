@@ -8,21 +8,16 @@
 
 import sys
 import os
-import json
-import xml
 import re
 import optparse
-import requests
 import urllib3
 import time
 import smtplib
 import string
 import eiqcalls
-import eiqjson
 import pprint
 import unicodedata
 import pickle
-import hashlib
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -154,7 +149,8 @@ def rulegen(entities, options):
                         msg = kind.upper() + " detected: " + value
                         msg += " | " + message
                         msg += " | rev:" + str(rev)
-                        ruleset.append('alert ip $HOME_NET any <> ' +
+                        ruleset.append('alert ip ' + options.network +
+                                       ' any <> ' +
                                        value + ' any ' +
                                        '(msg:"' + msg + '"; ' +
                                        'priority:' + str(priority) + '; ' +
@@ -169,7 +165,8 @@ def rulegen(entities, options):
 #                        msg += " | rev:" + str(rev)
 #                        value = ' '.join("{:02x}".format(ord(c))
 #                                         for c in value)
-#                        ruleset.append('alert tcp $HOME_NET any -> ' +
+#                        ruleset.append('alert tcp ' + options.network +
+#                                       ' any -> ' +
 #                                       options.dest + ' any ' +
 #                                       '(msg:"' + msg + '"; ' +
 #                                       'content:"|' + value + '|"; ' +
@@ -196,12 +193,27 @@ def rulegen(entities, options):
                                 if uri.port:
                                     value = host + ':' + str(port)
                                 else:
+                                    port = 443
                                     value = host + ':443'
                             http_ports = str(settings.HTTP_PROXYSERVERPORT)
                         else:
                             dest = options.dest
                             if uri.port:
-                                http_ports = str(port)
+                                if not settings.HTTP_PROXYSERVER and\
+                                   settings.HTTP_PROXYBYPASS:
+                                    if str(settings.HTTP_PROXYSERVERPORT) !=\
+                                       uri.port:
+                                        http_ports = '['
+                                        http_ports += str(settings.
+                                                          HTTP_PROXYSERVERPORT)
+                                        http_ports += ','
+                                        http_ports += str(uri.port)
+                                        http_ports += ']'
+                                    else:
+                                        http_ports =\
+                                            str(settings.HTTP_PROXYSERVERPORT)
+                                else:
+                                    http_ports = str(port)
                             else:
                                 http_ports = str(settings.HTTP_PORTS)
                         # Remove variables in GET request to prevent
@@ -222,18 +234,59 @@ def rulegen(entities, options):
                                              for c in value)
                             content += value + '|"; '
                         else:
-                            content += 'content:"' + value + '"; '
-                            if 'https://' in msg:
+                            if uri.host and 'https://' not in msg\
+                               and not settings.HTTP_PROXYSERVER:
+                                content += 'content:"'
+                                content += uri.host + '"; '
                                 content += 'http_header; '
+                                content += 'nocase; '
+                                if uri.request_uri and uri.request_uri != '/':
+                                    content += 'content:"' + uri.request_uri
+                                    content += '"; '
+                                    if 'https://' in msg:
+                                        content += 'http_header; '
+                                    else:
+                                        content += 'http_uri; '
+                                    content += 'fast_pattern:only; '
+                                    content += 'nocase; '
                             else:
-                                content += 'http_uri; '
-                            content += 'fast_pattern:only; '
-                            content += 'nocase; '
-                        ruleset.append('alert tcp $HOME_NET any -> ' +
+                                if 'https://' in msg and\
+                                   settings.HTTP_PROXYSERVER:
+                                    if uri.host:
+                                        content += 'content:"CONNECT"; '
+                                        content += 'http_method; nocase; '
+                                        content += 'content:"' + uri.host
+                                        content += '"; '
+                                        content += 'http_header; nocase; '
+                                if 'https://' in msg and\
+                                   settings.HTTP_PROXYBYPASS:
+                                    if uri.host:
+                                        content += 'content:"CONNECT"; '
+                                        content += 'http_method; nocase; '
+                                        content += 'content:"' + uri.host
+                                        content += '"; '
+                                        content += 'http_header; nocase; '
+                                if 'https://' not in msg:
+                                    if uri.host:
+                                        content += 'content:"'
+                                        content += uri.host + '"; '
+                                        content += 'http_header; nocase; '
+                                    if uri.request_uri and\
+                                       uri.request_uri != '/':
+                                        content += 'content:"'
+                                        content += uri.request_uri + '"; '
+                                        if 'https://' in msg:
+                                            content += 'http_header; '
+                                        else:
+                                            content += 'http_uri; '
+                                        content += 'fast_pattern:only; '
+                                        content += 'nocase; '
+                        ruleset.append('alert tcp ' + options.network +
+                                       ' any -> ' +
                                        dest + ' ' +
                                        http_ports + ' ' +
                                        '(msg:"' + msg + '"; ' +
-                                       'flow:to_server,established; ' +
+                                       # 'flow:to_server,established; ' +
                                        content +
                                        'priority:' + str(priority) + '; ' +
                                        'sid:' + str(sid) + '; ' +
@@ -253,7 +306,8 @@ def rulegen(entities, options):
                             content += '|' + hex(len(part))[2:].zfill(2) + \
                                        '|' + part
                         content += '|00|'
-                        ruleset.append('alert udp $HOME_NET any -> ' +
+                        ruleset.append('alert udp ' + options.network +
+                                       ' any -> ' +
                                        options.dest + ' 53 ' +
                                        '(msg:"' + msg + '"; ' +
                                        'byte_test:1,!&,0xF8,2; ' +
@@ -266,7 +320,8 @@ def rulegen(entities, options):
                                        '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
-                        ruleset.append('alert tcp $HOME_NET any -> ' +
+                        ruleset.append('alert tcp ' + options.network +
+                                       ' any -> ' +
                                        options.dest + ' 53 ' +
                                        '(msg:"' + msg + '"; ' +
                                        'byte_test:1,!&,0xF8,2; ' +
@@ -285,7 +340,8 @@ def rulegen(entities, options):
                         msg += " | rev:" + str(rev)
                         value = ' '.join("{:02x}".format(ord(c))
                                          for c in value)
-                        ruleset.append('alert tcp $HOME_NET any <> ' +
+                        ruleset.append('alert tcp ' + options.network +
+                                       ' any <> ' +
                                        options.dest + ' ' +
                                        settings.SMTP_PORTS +
                                        ' (msg:"' + msg + '"; ' +
@@ -297,7 +353,8 @@ def rulegen(entities, options):
                                        '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
-                        ruleset.append('alert tcp $HOME_NET any <> ' +
+                        ruleset.append('alert tcp ' + options.network +
+                                       ' any <> ' +
                                        options.dest + ' ' +
                                        settings.POP3_PORTS +
                                        ' (msg:"' + msg + '"; ' +
@@ -309,7 +366,8 @@ def rulegen(entities, options):
                                        '; ' + 'rev:' + str(rev) +
                                        ')')
                         sid += 1
-                        ruleset.append('alert tcp $HOME_NET any <> ' +
+                        ruleset.append('alert tcp ' + options.network +
+                                       ' any <> ' +
                                        options.dest + ' ' +
                                        settings.IMAP_PORTS + ' ' +
                                        '(msg:"' + msg + '"; ' +
@@ -469,7 +527,7 @@ def reusesid(ruleset, options):
             try:
                 with open(settings.SIDFILE, 'wb') as sidfile:
                     pickle.dump(newrulemap, sidfile, pickle.HIGHEST_PROTOCOL)
-            except:
+            except IOError:
                 if options.verbose:
                     print("An error occurred writing the sidmap to disk!")
                     raise
@@ -507,9 +565,9 @@ def download(feedID, options):
         response = eiqAPI.do_call(endpt=eiqFeed,
                                   headers=eiqHeaders,
                                   method='GET')
-    except:
+    except IOError:
         print("E) An error occurred contacting the EIQ URL at " +
-              feedURL)
+              eiqFeed)
         raise
     if not response or ('errors' in response):
         if response:
@@ -571,7 +629,7 @@ def process(ruleset, options):
             smtp = smtplib.SMTP(settings.EMAILSERVER)
             try:
                 smtp.send_message(msg)
-            except:
+            except IOError:
                 print("E) An error occurred sending e-mail!")
                 raise
         else:
@@ -588,7 +646,7 @@ def process(ruleset, options):
             else:
                 print("U) Not writing anything to disk, as " +
                       "simulation option was set!")
-        except:
+        except IOError:
             print("E) An error occurred writing to disk!")
             raise
 
@@ -662,11 +720,17 @@ if __name__ == "__main__":
                         'easy deletion/disabling. Using the rev counter ' +
                         'ensures that the rules can be loaded correctly ' +
                         '(default: use date/time: YYYYMMDD00)')
-    cli.add_option('-n', '--name',
+    cli.add_option('--comment',
                    dest='name',
                    default=settings.COMMENT,
-                   help='[optional] Override the default comment from ' +
-                        'the configuration file (default: COMMENT field ' +
+                   help='[optional] Override the default comment from the ' +
+                        'configuration file (default: ' + settings.COMMENT +
+                        'from the settings.py file)')
+    cli.add_option('-n', '--network',
+                   dest='network',
+                   default=settings.NETVAR,
+                   help='[optional] Override the default source network from '
+                        'the configuration file (default: ' + settings.NETVAR +
                         'from the settings.py file)')
     cli.add_option('-m', '--maliciousness',
                    dest='maliciousness',
@@ -682,7 +746,7 @@ if __name__ == "__main__":
     else:
         try:
             feedID = int(args[0])
-        except:
+        except ValueError:
             print("E) Please specify a numeric feedID only.")
             raise
         feedDict = download(feedID, options)

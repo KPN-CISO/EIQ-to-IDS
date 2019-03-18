@@ -553,7 +553,7 @@ def download(feedID, options):
                   "this is not recommended.")
     eiqAPI = eiqcalls.EIQApi(insecure=not(settings.EIQSSLVERIFY))
     eiqHost = settings.EIQHOST + settings.EIQVERSION
-    eiqFeed = settings.EIQFEEDS + '/' + str(feedID)
+    eiqFeed = settings.EIQFEEDS + '/' + str(feedID) + '/runs/latest'
     eiqAPI.set_host(eiqHost)
     eiqAPI.set_credentials(settings.EIQUSER, settings.EIQPASS)
     eiqToken = eiqAPI.do_auth()

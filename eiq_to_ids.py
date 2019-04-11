@@ -202,7 +202,7 @@ def rulegen(entities, options):
                                 if not settings.HTTP_PROXYSERVER and\
                                    settings.HTTP_PROXYBYPASS:
                                     if str(settings.HTTP_PROXYSERVERPORT) !=\
-                                       uri.port:
+                                       str(uri.port):
                                         http_ports = '['
                                         http_ports += str(settings.
                                                           HTTP_PROXYSERVERPORT)
